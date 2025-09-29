@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Calculator,
   Brain,
@@ -13,6 +14,9 @@ import {
   ChartBar,
   ArrowRight,
   Activity,
+  PiggyBank,
+  Wallet,
+  Building,
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -25,32 +29,24 @@ export default function DashboardPage() {
       description: "Calculate your superannuation projections",
       icon: Calculator,
       href: "/dashboard/tools/super-calculator",
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
+      color: "text-blue-500",
+      bgColor: "bg-blue-500/10",
     },
     {
       title: "Spending Analyzer",
       description: "Upload and analyze your bank statements",
       icon: Brain,
       href: "/dashboard/tools/spending-analyzer",
-      color: "text-green-600",
-      bgColor: "bg-green-50",
+      color: "text-emerald-500",
+      bgColor: "bg-emerald-500/10",
     },
     {
-      title: "View Reports",
-      description: "Access your financial reports",
-      icon: ChartBar,
-      href: "/dashboard/reports",
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
-    },
-    {
-      title: "Documents",
-      description: "Manage your financial documents",
-      icon: FileText,
-      href: "/dashboard/documents",
-      color: "text-orange-600",
-      bgColor: "bg-orange-50",
+      title: "Budget Builder",
+      description: "Create and manage your monthly budget",
+      icon: PiggyBank,
+      href: "/dashboard/tools/budget-builder",
+      color: "text-purple-500",
+      bgColor: "bg-purple-500/10",
     },
   ];
 
@@ -105,7 +101,7 @@ export default function DashboardPage() {
               <div className={cn(
                 "text-sm flex items-center",
                 stat.trend === "up" && "text-emerald-600 dark:text-emerald-500",
-                stat.trend === "down" && "text-red-600",
+                stat.trend === "down" && "text-destructive",
                 stat.trend === "neutral" && "text-gray-600"
               )}>
                 {stat.trend === "up" && <TrendingUp className="h-4 w-4 mr-1" />}
@@ -121,68 +117,84 @@ export default function DashboardPage() {
 
       {/* Quick Actions */}
       <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <h2 className="text-xl font-semibold mb-4">Trend Tools</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {quickActions.map((action) => (
             <Link key={action.title} href={action.href}>
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full flex flex-col">
-                <CardHeader className="flex-1">
-                  <div className={cn("p-3 rounded-lg w-fit mb-2", action.bgColor)}>
+              <Card className="glass-card border-0 cursor-pointer hover:shadow-lg transition-shadow h-full">
+                <CardHeader>
+                  <div className={cn("h-12 w-12 rounded-full flex items-center justify-center mb-3", action.bgColor)}>
                     <action.icon className={cn("h-6 w-6", action.color)} />
                   </div>
-                  <CardTitle className="text-lg">{action.title}</CardTitle>
+                  <CardTitle>{action.title}</CardTitle>
                   <CardDescription>{action.description}</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <Button variant="ghost" className="p-0 h-auto">
-                    Open tool <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </CardContent>
               </Card>
             </Link>
           ))}
         </div>
       </div>
 
-      {/* Recent Activity */}
+      {/* Account Balances and Goals */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <Activity className="mr-2 h-5 w-5" />
-              Recent Transactions
+              <Wallet className="mr-2 h-5 w-5" />
+              Current Balances
             </CardTitle>
             <CardDescription>
-              Your latest spending activity
+              Your accounts overview
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {[
-                { merchant: "Woolworths", amount: "-$124.50", date: "Today" },
-                { merchant: "Spotify", amount: "-$11.99", date: "Yesterday" },
-                { merchant: "Salary Deposit", amount: "+$3,240.00", date: "3 days ago" },
-                { merchant: "Netflix", amount: "-$19.99", date: "5 days ago" },
-              ].map((transaction, i) => (
-                <div key={i} className="flex items-center justify-between py-2 border-b last:border-0">
-                  <div>
-                    <p className="font-medium">{transaction.merchant}</p>
-                    <p className="text-sm text-gray-500">{transaction.date}</p>
+            <div className="space-y-3">
+              {/* Superannuation */}
+              <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center">
+                    <div className="h-5 w-5 rounded bg-emerald-600 dark:bg-emerald-500 flex items-center justify-center mr-2">
+                      <span className="text-[10px] font-bold text-white">AS</span>
+                    </div>
+                    <span className="text-sm font-medium">Superannuation</span>
                   </div>
-                  <span className={cn(
-                    "font-semibold",
-                    transaction.amount.startsWith("+") ? "text-emerald-600 dark:text-emerald-500" : "text-red-600"
-                  )}>
-                    {transaction.amount}
-                  </span>
+                  <span className="text-xs text-emerald-600 dark:text-emerald-500">+8.2%</span>
                 </div>
-              ))}
+                <p className="text-lg font-bold">$124,320</p>
+                <p className="text-xs text-muted-foreground">Australian Super</p>
+              </div>
+
+              {/* Bank Accounts */}
+              <div className="space-y-2">
+                <div className="p-3 rounded-lg border">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center">
+                      <div className="h-5 w-5 rounded bg-yellow-500 dark:bg-yellow-600 flex items-center justify-center mr-2">
+                        <span className="text-[10px] font-bold text-black">C</span>
+                      </div>
+                      <span className="text-sm font-medium">Everyday Account</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">****4521</span>
+                  </div>
+                  <p className="text-lg font-semibold">$3,456.78</p>
+                  <p className="text-xs text-muted-foreground">Commonwealth Bank</p>
+                </div>
+                
+                <div className="p-3 rounded-lg border">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center">
+                      <div className="h-5 w-5 rounded bg-orange-500 dark:bg-orange-600 flex items-center justify-center mr-2">
+                        <span className="text-[10px] font-bold text-white">I</span>
+                      </div>
+                      <span className="text-sm font-medium">Savings Account</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">****8932</span>
+                  </div>
+                  <p className="text-lg font-semibold">$18,234.50</p>
+                  <p className="text-xs text-muted-foreground">ING Direct</p>
+                </div>
+              </div>
             </div>
-            <Link href="/dashboard/tools/spending-analyzer">
-              <Button variant="outline" className="w-full mt-4">
-                View all transactions
-              </Button>
-            </Link>
           </CardContent>
         </Card>
 

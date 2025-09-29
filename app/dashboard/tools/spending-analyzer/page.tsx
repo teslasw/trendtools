@@ -168,7 +168,7 @@ export default function SpendingAnalyzerPage() {
   };
 
   const handleConnectBank = () => {
-    if (!isClient) {
+    if (!advisor) {
       return;
     }
     // TODO: Implement bank connection
@@ -490,7 +490,10 @@ export default function SpendingAnalyzerPage() {
                   )}
                 </div>
                 
-                <div className="flex flex-col items-center justify-center gap-2 px-4 min-w-[200px]">
+                <div className={cn(
+                  "flex flex-col items-center justify-center gap-2 px-4 min-w-[200px]",
+                  !advisor && "ml-auto"
+                )}>
                   <AdvisorContactButton 
                     context="Spending Analyzer - Analysis" 
                     variant="default"
@@ -526,42 +529,62 @@ export default function SpendingAnalyzerPage() {
             <div className="grid md:grid-cols-2 gap-4">
               {/* Connect Bank Card */}
               <Card className="glass-card border-0">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Building2 className="h-5 w-5" />
-                    Connect Your Bank
-                    {!isClient && <ClientOnlyBadge />}
-                  </CardTitle>
-                  <CardDescription>
-                    Securely connect to your bank for automatic transaction import
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button 
-                    className="w-full" 
-                    size="lg"
-                    onClick={handleConnectBank}
-                    disabled={!isClient}
-                    variant={isClient ? "default" : "outline"}
-                  >
-                    {isClient ? (
-                      <>
+                <div className={cn(
+                  advisor ? "" : "opacity-75"
+                )}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Building2 className="h-5 w-5" />
+                      Connect Your Bank
+                      {!advisor && (
+                        <Badge className="bg-gradient-to-r from-sky-500 to-blue-500 text-white border-0 text-xs px-2 py-0.5">
+                          Clients Only
+                        </Badge>
+                      )}
+                    </CardTitle>
+                    <CardDescription>
+                      {advisor
+                        ? "Securely connect to your bank for automatic transaction import"
+                        : "Available for advisory clients only"}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {advisor ? (
+                      <Button 
+                        className="w-full" 
+                        size="lg"
+                        onClick={handleConnectBank}
+                        variant="default"
+                      >
                         <Building2 className="mr-2 h-4 w-4" />
                         Connect Bank Account
-                      </>
+                      </Button>
                     ) : (
-                      <>
+                      <Button 
+                        className="w-full" 
+                        size="lg"
+                        disabled
+                        variant="outline"
+                      >
                         <Lock className="mr-2 h-4 w-4" />
                         Clients Only Feature
-                      </>
+                      </Button>
                     )}
-                  </Button>
-                  {!isClient && (
-                    <p className="text-xs text-muted-foreground mt-3 text-center">
-                      Upgrade to a client account to access bank connections
-                    </p>
-                  )}
-                </CardContent>
+                  </CardContent>
+                </div>
+                {!advisor && (
+                  <CardContent className="pt-0">
+                    <AdvisorContactButton 
+                      context="Bank Connection Request"
+                      variant="default"
+                      size="sm"
+                      className="w-full"
+                    >
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      Speak with Advisor
+                    </AdvisorContactButton>
+                  </CardContent>
+                )}
               </Card>
 
               {/* Manual Upload Card */}
@@ -620,8 +643,14 @@ export default function SpendingAnalyzerPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="pt-6">
-        <h1 className="text-3xl font-bold">Spending Analyzer</h1>
-        <p className="text-[#223145]/70 mt-2">
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold">Spending Analyzer</h1>
+          <Badge className="bg-gradient-to-r from-sky-500 to-blue-500 text-white border-0 px-2 py-1">
+            <Sparkles className="h-3 w-3 mr-1" />
+            Powered by AI
+          </Badge>
+        </div>
+        <p className="text-muted-foreground mt-2">
           Upload your bank statements to get AI-powered spending insights
         </p>
       </div>
@@ -705,7 +734,10 @@ export default function SpendingAnalyzerPage() {
               )}
             </div>
             
-            <div className="flex flex-col items-center justify-center gap-2 px-4 min-w-[200px]">
+            <div className={cn(
+              "flex flex-col items-center justify-center gap-2 px-4 min-w-[200px]",
+              !advisor && "ml-auto"
+            )}>
               <AdvisorContactButton 
                 context="Spending Analyzer - Welcome" 
                 variant="default"
@@ -740,20 +772,24 @@ export default function SpendingAnalyzerPage() {
         <Card 
           className={cn(
             "glass-card border-0 transition-shadow",
-            isClient ? "cursor-pointer hover:shadow-lg" : "opacity-75"
+            advisor ? "cursor-pointer hover:shadow-lg" : "opacity-75"
           )}
-          onClick={isClient ? handleConnectBank : undefined}
+          onClick={advisor ? handleConnectBank : undefined}
         >
           <CardHeader>
             <div className="h-12 w-12 rounded-full bg-amber-500/10 flex items-center justify-center mb-3">
               <Building2 className="h-6 w-6 text-amber-500" />
             </div>
-            <CardTitle className="flex items-center">
+            <CardTitle className="flex items-center gap-2">
               Connect Bank
-              {!isClient && <ClientOnlyBadge />}
+              {!advisor && (
+                <Badge className="bg-gradient-to-r from-sky-500 to-blue-500 text-white border-0 text-xs px-2 py-0.5">
+                  Clients Only
+                </Badge>
+              )}
             </CardTitle>
             <CardDescription>
-              {isClient 
+              {advisor 
                 ? "Securely connect to your bank account" 
                 : "Available for advisory clients only"}
             </CardDescription>
