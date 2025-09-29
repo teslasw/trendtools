@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { FileUploadZone } from "./components/FileUploadZone";
 import { TransactionTable, type Transaction } from "./components/TransactionTable";
 import { SpendingDashboard } from "./components/SpendingDashboard";
@@ -11,6 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ClientOnlyBadge } from "@/components/ui/client-badge";
+import { AdvisorContactButton } from "@/components/advisor-contact";
 import {
   Dialog,
   DialogContent,
@@ -33,6 +36,15 @@ import {
   XCircle,
   History,
   Trash2,
+  Building2,
+  Plus,
+  Upload,
+  Lock,
+  Star,
+  Users,
+  TrendingDown,
+  DollarSign,
+  MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -47,6 +59,7 @@ interface SavedSession {
 }
 
 export default function SpendingAnalyzerPage() {
+  const { data: session } = useSession();
   const [sessionName, setSessionName] = useState("");
   const [isSessionStarted, setIsSessionStarted] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -57,6 +70,12 @@ export default function SpendingAnalyzerPage() {
   const [savedSessions, setSavedSessions] = useState<SavedSession[]>([]);
   const [showSavedSessions, setShowSavedSessions] = useState(false);
   const [currentAnalysisId, setCurrentAnalysisId] = useState<string | null>(null);
+  const [showNewAnalysisDialog, setShowNewAnalysisDialog] = useState(false);
+
+  // Check if user is a client (not in Free Users group)
+  const userGroups = (session?.user as any)?.groups || [];
+  const isClient = !userGroups.includes("Free Users") && userGroups.length > 0;
+  const isPremiumClient = userGroups.includes("Premium Advisory Clients");
 
   // Fetch saved sessions on mount
   useEffect(() => {
@@ -143,7 +162,16 @@ export default function SpendingAnalyzerPage() {
     if (sessionName.trim()) {
       setIsSessionStarted(true);
       setAnalysisStatus("idle");
+      setShowNewAnalysisDialog(false);
     }
+  };
+
+  const handleConnectBank = () => {
+    if (!isClient) {
+      return;
+    }
+    // TODO: Implement bank connection
+    console.log("Connecting to bank...");
   };
 
   const handleFilesUploaded = async (files: File[]) => {
@@ -323,228 +351,500 @@ export default function SpendingAnalyzerPage() {
     }
   };
 
-  if (!isSessionStarted) {
+  // Main content when session is started
+  if (isSessionStarted) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-8">
-        <div className="space-y-4 w-full max-w-4xl">
-          <Card className="glass-card border-0 shadow-xl">
-            <CardHeader className="text-center">
-              <div className="mx-auto h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                <Brain className="h-6 w-6 text-primary" />
-              </div>
-              <CardTitle className="text-2xl">Start Analysis Session</CardTitle>
-              <CardDescription>
-                Give your analysis a name to get started or load a saved session
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="session-name">Session Name</Label>
-                <Input
-                  id="session-name"
-                  placeholder="e.g., January 2024 Spending Review"
-                  value={sessionName}
-                  onChange={(e) => setSessionName(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && handleStartSession()}
-                  className="mt-2"
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleStartSession}
-                  disabled={!sessionName.trim()}
-                  className="flex-1"
-                >
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Start New Analysis
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowSavedSessions(!showSavedSessions)}
-                  className="flex-1"
-                >
-                  <History className="mr-2 h-4 w-4" />
-                  {showSavedSessions ? "Hide" : "Show"} Saved Sessions
-                </Button>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">{sessionName}</h1>
+            <p className="text-muted-foreground mt-2">
+              Analyze your spending patterns with AI-powered insights
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleSave}>
+              <Save className="mr-2 h-4 w-4" />
+              Save
+            </Button>
+            <Button variant="outline" onClick={handleExport}>
+              <Download className="mr-2 h-4 w-4" />
+              Export
+            </Button>
+          </div>
+        </div>
+
+        {/* Status Badge */}
+        <div className="flex items-center gap-4">
+          <Badge
+            variant={
+              analysisStatus === "completed" ? "default" :
+              analysisStatus === "processing" ? "secondary" :
+              analysisStatus === "error" ? "destructive" :
+              "outline"
+            }
+            className="px-3 py-1"
+          >
+            {analysisStatus === "completed" && <CheckCircle className="mr-1 h-3 w-3" />}
+            {analysisStatus === "processing" && <Clock className="mr-1 h-3 w-3" />}
+            {analysisStatus === "error" && <XCircle className="mr-1 h-3 w-3" />}
+            {analysisStatus.charAt(0).toUpperCase() + analysisStatus.slice(1)}
+          </Badge>
+          {transactions.length > 0 && (
+            <span className="text-sm text-muted-foreground">
+              {transactions.length} transactions analyzed
+            </span>
+          )}
+        </div>
+
+        {/* Insights Alert */}
+        {insights.length > 0 && (
+          <Alert className="bg-primary/5 border-primary/20">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <AlertDescription className="text-sm">
+              <strong className="font-semibold">AI Insights Available:</strong>{" "}
+              {insights[0].description}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Advisor Help Card - Show when transactions are analyzed */}
+        {transactions.length > 0 && (
+          <Card className="relative overflow-hidden border-2 border-emerald-400/50 shadow-2xl bg-gradient-to-br from-emerald-50 via-teal-50/80 to-cyan-50 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-cyan-950/40">
+            {/* Morphing gradient background */}
+            <div 
+              className="absolute inset-0 animate-gradient-morph opacity-30"
+              style={{
+                background: `linear-gradient(135deg, 
+                  rgba(16, 185, 129, 0.3) 0%, 
+                  rgba(20, 184, 166, 0.2) 25%, 
+                  rgba(6, 182, 212, 0.3) 50%, 
+                  rgba(20, 184, 166, 0.2) 75%, 
+                  rgba(16, 185, 129, 0.3) 100%)`,
+                backgroundSize: '200% 200%'
+              }}
+            />
+            
+            {/* Secondary morphing layer */}
+            <div 
+              className="absolute inset-0 animate-gradient-morph opacity-20"
+              style={{
+                background: `radial-gradient(circle at 30% 50%, 
+                  rgba(52, 211, 153, 0.4) 0%, 
+                  transparent 50%)`,
+                backgroundSize: '200% 200%',
+                animationDelay: '-5s',
+                animationDuration: '20s'
+              }}
+            />
+            
+            {/* Soft glow spots */}
+            <div className="absolute top-10 right-20 w-40 h-40 bg-emerald-400/30 rounded-full blur-3xl" />
+            <div className="absolute bottom-10 left-20 w-48 h-48 bg-teal-400/30 rounded-full blur-3xl" />
+            
+            <CardContent className="relative p-8">
+              <div className="flex items-center justify-between gap-6">
+                <div className="flex-1 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex -space-x-2">
+                      <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xs font-bold">SA</div>
+                      <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center text-white text-xs font-bold">MC</div>
+                    </div>
+                    <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">
+                      Expert Advisors Available
+                    </Badge>
+                  </div>
+                  
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                    We found ${Math.round(transactions.reduce((sum, t) => sum + Math.abs(t.amount), 0) * 0.15)}/month in potential savings!
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    Our certified advisors can help you optimize your spending, create a budget that works, and achieve your financial goals faster.
+                  </p>
+                  
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2">
+                    <div className="flex items-center gap-1">
+                      <CheckCircle className="h-3 w-3 text-emerald-500" />
+                      <span>Free consultation</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-3 w-3 text-emerald-500" />
+                      <span>15-min response</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Star className="h-3 w-3 text-emerald-500" />
+                      <span>4.9/5 rating</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col items-center gap-2">
+                  <AdvisorContactButton 
+                    context="Spending Analyzer - Analysis" 
+                    variant="default"
+                    size="lg"
+                    className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white border-0 shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+                  />
+                  <span className="text-xs text-muted-foreground">No obligation</span>
+                </div>
               </div>
             </CardContent>
           </Card>
+        )}
 
-          {showSavedSessions && (
+        <Tabs defaultValue="upload" className="space-y-4">
+          <TabsList className="grid grid-cols-3 w-full max-w-[600px]">
+            <TabsTrigger value="upload">
+              <FileText className="mr-2 h-4 w-4" />
+              Upload
+            </TabsTrigger>
+            <TabsTrigger value="transactions" disabled={transactions.length === 0}>
+              <Brain className="mr-2 h-4 w-4" />
+              Transactions
+            </TabsTrigger>
+            <TabsTrigger value="insights" disabled={insights.length === 0}>
+              <TrendingUp className="mr-2 h-4 w-4" />
+              Insights
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="upload" className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              {/* Connect Bank Card */}
+              <Card className="glass-card border-0 shadow-xl">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Building2 className="h-5 w-5" />
+                    Connect Your Bank
+                    {!isClient && <ClientOnlyBadge />}
+                  </CardTitle>
+                  <CardDescription>
+                    Securely connect to your bank for automatic transaction import
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button 
+                    className="w-full" 
+                    size="lg"
+                    onClick={handleConnectBank}
+                    disabled={!isClient}
+                    variant={isClient ? "default" : "outline"}
+                  >
+                    {isClient ? (
+                      <>
+                        <Building2 className="mr-2 h-4 w-4" />
+                        Connect Bank Account
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="mr-2 h-4 w-4" />
+                        Clients Only Feature
+                      </>
+                    )}
+                  </Button>
+                  {!isClient && (
+                    <p className="text-xs text-muted-foreground mt-3 text-center">
+                      Upgrade to a client account to access bank connections
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Manual Upload Card */}
+              <Card className="glass-card border-0 shadow-xl">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Upload className="h-5 w-5" />
+                    Manual Upload
+                  </CardTitle>
+                  <CardDescription>
+                    Upload bank statements manually (CSV, PDF, OFX)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <FileUploadZone
+                    onFilesUploaded={handleFilesUploaded}
+                    isProcessing={isProcessing}
+                    compact
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="transactions" className="space-y-4">
             <Card className="glass-card border-0 shadow-xl">
               <CardHeader>
-                <CardTitle>Saved Sessions</CardTitle>
+                <CardTitle>Review Transactions</CardTitle>
                 <CardDescription>
-                  Load a previous analysis session
+                  Mark transactions as Keep, Cancel, or Consider for further review
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {savedSessions.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-4">
-                    No saved sessions yet
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {savedSessions.map((session) => (
-                      <div
-                        key={session.id}
-                        className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
-                      >
-                        <div>
-                          <h4 className="font-semibold">{session.name}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {session.transactionCount} transactions • ${session.totalAmount.toFixed(2)}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Created {new Date(session.createdAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => loadSession(session.id)}
-                          >
-                            Load
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              if (confirm(`Delete "${session.name}"?`)) {
-                                deleteSession(session.id);
-                              }
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <TransactionTable
+                  transactions={transactions}
+                  onUpdateTransaction={handleUpdateTransaction}
+                  onBulkUpdate={handleBulkUpdate}
+                />
               </CardContent>
             </Card>
-          )}
-        </div>
+          </TabsContent>
+
+          <TabsContent value="insights" className="space-y-4">
+            <SpendingDashboard
+              transactions={transactions}
+              insights={insights}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
     );
   }
 
+  // Initial landing page
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{sessionName}</h1>
-          <p className="text-muted-foreground mt-2">
-            Upload your bank statements to get AI-powered spending insights
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleSave}>
-            <Save className="mr-2 h-4 w-4" />
-            Save
-          </Button>
-          <Button variant="outline" onClick={handleExport}>
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </Button>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold">Spending Analyzer</h1>
+        <p className="text-muted-foreground mt-2">
+          Upload your bank statements to get AI-powered spending insights
+        </p>
       </div>
 
-      {/* Status Badge */}
-      <div className="flex items-center gap-4">
-        <Badge
-          variant={
-            analysisStatus === "completed" ? "default" :
-            analysisStatus === "processing" ? "secondary" :
-            analysisStatus === "error" ? "destructive" :
-            "outline"
-          }
-          className="px-3 py-1"
+      {/* Advisor Help Card */}
+      <Card className="relative overflow-hidden border-2 border-emerald-400/50 shadow-2xl bg-gradient-to-br from-emerald-50 via-teal-50/80 to-cyan-50 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-cyan-950/40 mb-6">
+        {/* Morphing gradient background */}
+        <div 
+          className="absolute inset-0 animate-gradient-morph opacity-30"
+          style={{
+            background: `linear-gradient(135deg, 
+              rgba(16, 185, 129, 0.3) 0%, 
+              rgba(20, 184, 166, 0.2) 25%, 
+              rgba(6, 182, 212, 0.3) 50%, 
+              rgba(20, 184, 166, 0.2) 75%, 
+              rgba(16, 185, 129, 0.3) 100%)`,
+            backgroundSize: '200% 200%'
+          }}
+        />
+        
+        {/* Secondary morphing layer */}
+        <div 
+          className="absolute inset-0 animate-gradient-morph opacity-20"
+          style={{
+            background: `radial-gradient(circle at 30% 50%, 
+              rgba(52, 211, 153, 0.4) 0%, 
+              transparent 50%)`,
+            backgroundSize: '200% 200%',
+            animationDelay: '-5s',
+            animationDuration: '20s'
+          }}
+        />
+        
+        {/* Soft glow spots */}
+        <div className="absolute top-10 right-20 w-40 h-40 bg-emerald-400/30 rounded-full blur-3xl" />
+        <div className="absolute bottom-10 left-20 w-48 h-48 bg-teal-400/30 rounded-full blur-3xl" />
+        
+        <CardContent className="relative p-8">
+          <div className="flex items-center justify-between gap-6">
+            <div className="flex-1 space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="flex -space-x-2">
+                  <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xs font-bold">SA</div>
+                  <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center text-white text-xs font-bold">MC</div>
+                </div>
+                <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">
+                  Expert Advisors Available
+                </Badge>
+              </div>
+              
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                Start your financial transformation today
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Get personalized guidance from certified financial advisors who can help you budget, save, invest, and achieve your financial goals.
+              </p>
+              
+              <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2">
+                <div className="flex items-center gap-1">
+                  <CheckCircle className="h-3 w-3 text-emerald-500" />
+                  <span>Free consultation</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3 w-3 text-emerald-500" />
+                  <span>15-min response</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Star className="h-3 w-3 text-emerald-500" />
+                  <span>4.9/5 rating</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex flex-col items-center gap-2">
+              <AdvisorContactButton 
+                context="Spending Analyzer - Welcome" 
+                variant="default"
+                size="lg"
+                className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white border-0 shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+              />
+              <span className="text-xs text-muted-foreground">No obligation</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Quick Actions */}
+      <div className="grid md:grid-cols-3 gap-4">
+        <Card 
+          className="glass-card border-0 shadow-xl cursor-pointer hover:shadow-2xl transition-shadow"
+          onClick={() => setShowNewAnalysisDialog(true)}
         >
-          {analysisStatus === "completed" && <CheckCircle className="mr-1 h-3 w-3" />}
-          {analysisStatus === "processing" && <Clock className="mr-1 h-3 w-3" />}
-          {analysisStatus === "error" && <XCircle className="mr-1 h-3 w-3" />}
-          {analysisStatus.charAt(0).toUpperCase() + analysisStatus.slice(1)}
-        </Badge>
-        {transactions.length > 0 && (
-          <span className="text-sm text-muted-foreground">
-            {transactions.length} transactions analyzed
-          </span>
-        )}
+          <CardHeader>
+            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+              <Plus className="h-6 w-6 text-primary" />
+            </div>
+            <CardTitle>New Analysis</CardTitle>
+            <CardDescription>
+              Start a fresh spending analysis session
+            </CardDescription>
+          </CardHeader>
+        </Card>
+
+        <Card 
+          className={cn(
+            "glass-card border-0 shadow-xl transition-shadow",
+            isClient ? "cursor-pointer hover:shadow-2xl" : "opacity-75"
+          )}
+          onClick={isClient ? handleConnectBank : undefined}
+        >
+          <CardHeader>
+            <div className="h-12 w-12 rounded-full bg-amber-500/10 flex items-center justify-center mb-3">
+              <Building2 className="h-6 w-6 text-amber-500" />
+            </div>
+            <CardTitle className="flex items-center">
+              Connect Bank
+              {!isClient && <ClientOnlyBadge />}
+            </CardTitle>
+            <CardDescription>
+              {isClient 
+                ? "Securely connect to your bank account" 
+                : "Available for advisory clients only"}
+            </CardDescription>
+          </CardHeader>
+        </Card>
+
+        <Card 
+          className="glass-card border-0 shadow-xl cursor-pointer hover:shadow-2xl transition-shadow"
+          onClick={() => setShowSavedSessions(!showSavedSessions)}
+        >
+          <CardHeader>
+            <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center mb-3">
+              <History className="h-6 w-6 text-green-500" />
+            </div>
+            <CardTitle>Saved Sessions</CardTitle>
+            <CardDescription>
+              Continue with a previous analysis
+            </CardDescription>
+          </CardHeader>
+        </Card>
       </div>
 
-      {/* Insights Alert */}
-      {insights.length > 0 && (
-        <Alert className="bg-primary/5 border-primary/20">
-          <Sparkles className="h-4 w-4 text-primary" />
-          <AlertDescription className="text-sm">
-            <strong className="font-semibold">AI Insights Available:</strong>{" "}
-            {insights[0].description}
-          </AlertDescription>
-        </Alert>
+      {/* Saved Sessions */}
+      {showSavedSessions && (
+        <Card className="glass-card border-0 shadow-xl">
+          <CardHeader>
+            <CardTitle>Your Saved Sessions</CardTitle>
+            <CardDescription>
+              Select a session to continue analyzing
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {savedSessions.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">No saved sessions yet</p>
+                <Button 
+                  className="mt-4" 
+                  onClick={() => setShowNewAnalysisDialog(true)}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Start Your First Analysis
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {savedSessions.map((session) => (
+                  <div
+                    key={session.id}
+                    className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+                  >
+                    <div>
+                      <h4 className="font-semibold">{session.name}</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {session.transactionCount} transactions • ${session.totalAmount.toFixed(2)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Created {new Date(session.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => loadSession(session.id)}
+                      >
+                        Continue
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          if (confirm(`Delete "${session.name}"?`)) {
+                            deleteSession(session.id);
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
 
-      <Tabs defaultValue="upload" className="space-y-4">
-        <TabsList className="grid grid-cols-3 w-full max-w-[600px]">
-          <TabsTrigger value="upload">
-            <FileText className="mr-2 h-4 w-4" />
-            Upload
-          </TabsTrigger>
-          <TabsTrigger value="transactions" disabled={transactions.length === 0}>
-            <Brain className="mr-2 h-4 w-4" />
-            Transactions
-          </TabsTrigger>
-          <TabsTrigger value="insights" disabled={insights.length === 0}>
-            <TrendingUp className="mr-2 h-4 w-4" />
-            Insights
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="upload" className="space-y-4">
-          <Card className="glass-card border-0 shadow-xl">
-            <CardHeader>
-              <CardTitle>Upload Bank Statements</CardTitle>
-              <CardDescription>
-                Upload your bank statements and let AI categorize your spending
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <FileUploadZone
-                onFilesUploaded={handleFilesUploaded}
-                isProcessing={isProcessing}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="transactions" className="space-y-4">
-          <Card className="glass-card border-0 shadow-xl">
-            <CardHeader>
-              <CardTitle>Review Transactions</CardTitle>
-              <CardDescription>
-                Mark transactions as Keep, Cancel, or Consider for further review
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <TransactionTable
-                transactions={transactions}
-                onUpdateTransaction={handleUpdateTransaction}
-                onBulkUpdate={handleBulkUpdate}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="insights" className="space-y-4">
-          <SpendingDashboard
-            transactions={transactions}
-            insights={insights}
-          />
-        </TabsContent>
-      </Tabs>
+      {/* New Analysis Dialog */}
+      <Dialog open={showNewAnalysisDialog} onOpenChange={setShowNewAnalysisDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Start New Analysis</DialogTitle>
+            <DialogDescription>
+              Give your spending analysis a name to get started
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="session-name">Session Name</Label>
+            <Input
+              id="session-name"
+              placeholder="e.g., January 2024 Spending Review"
+              value={sessionName}
+              onChange={(e) => setSessionName(e.target.value)}
+              className="mt-2"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNewAnalysisDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleStartSession} disabled={!sessionName.trim()}>
+              <Sparkles className="mr-2 h-4 w-4" />
+              Start Analysis
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

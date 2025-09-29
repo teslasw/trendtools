@@ -202,4 +202,27 @@
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
   }
+  
+  @keyframes gradient-morph {
+    0%, 100% { 
+      background-position: 0% 50%;
+      background-size: 200% 200%;
+    }
+    25% { 
+      background-position: 100% 0%;
+      background-size: 250% 250%;
+    }
+    50% { 
+      background-position: 100% 100%;
+      background-size: 200% 200%;
+    }
+    75% { 
+      background-position: 0% 100%;
+      background-size: 250% 250%;
+    }
+  }
+  
+  .animate-gradient-morph {
+    animation: gradient-morph 15s ease-in-out infinite;
+  }
 }

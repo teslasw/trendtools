@@ -37,6 +37,14 @@ export const authOptions: NextAuthOptions = {
           where: {
             email: credentials.email,
           },
+          include: {
+            userGroups: {
+              include: {
+                group: true,
+              },
+            },
+            advisor: true,
+          },
         });
 
         if (!user || !user.passwordHash) {
@@ -62,6 +70,18 @@ export const authOptions: NextAuthOptions = {
           name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email,
           role: user.role,
           image: user.image,
+          groups: user.userGroups.map(ug => ug.group.name),
+          advisorId: user.advisorId,
+          advisor: user.advisor ? {
+            id: user.advisor.id,
+            firstName: user.advisor.firstName,
+            lastName: user.advisor.lastName,
+            title: user.advisor.title,
+            profileImageUrl: user.advisor.profileImageUrl,
+            email: user.advisor.email,
+            phone: user.advisor.phone,
+            calendlyUrl: user.advisor.calendlyUrl,
+          } : null,
         };
       },
     }),
@@ -105,9 +125,38 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = (user as any).role;
+        token.groups = (user as any).groups || [];
+        token.advisorId = (user as any).advisorId;
+        token.advisor = (user as any).advisor;
       }
       if (account) {
         token.accessToken = account.access_token;
+      }
+      // Fetch fresh group data on token refresh
+      if (token.id) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          include: {
+            userGroups: {
+              include: { group: true },
+            },
+            advisor: true,
+          },
+        });
+        if (dbUser) {
+          token.groups = dbUser.userGroups.map(ug => ug.group.name);
+          token.advisorId = dbUser.advisorId;
+          token.advisor = dbUser.advisor ? {
+            id: dbUser.advisor.id,
+            firstName: dbUser.advisor.firstName,
+            lastName: dbUser.advisor.lastName,
+            title: dbUser.advisor.title,
+            profileImageUrl: dbUser.advisor.profileImageUrl,
+            email: dbUser.advisor.email,
+            phone: dbUser.advisor.phone,
+            calendlyUrl: dbUser.advisor.calendlyUrl,
+          } : null;
+        }
       }
       return token;
     },
@@ -115,6 +164,9 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         (session.user as any).id = token.id;
         (session.user as any).role = token.role;
+        (session.user as any).groups = token.groups || [];
+        (session.user as any).advisorId = token.advisorId;
+        (session.user as any).advisor = token.advisor;
       }
       return session;
     },

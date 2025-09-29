@@ -11,9 +11,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 interface FileUploadZoneProps {
   onFilesUploaded: (files: File[]) => void;
   isProcessing?: boolean;
+  compact?: boolean;
 }
 
-export function FileUploadZone({ onFilesUploaded, isProcessing }: FileUploadZoneProps) {
+export function FileUploadZone({ onFilesUploaded, isProcessing, compact = false }: FileUploadZoneProps) {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +71,8 @@ export function FileUploadZone({ onFilesUploaded, isProcessing }: FileUploadZone
       <div
         {...getRootProps()}
         className={cn(
-          "relative rounded-lg border-2 border-dashed p-8 text-center transition-colors cursor-pointer",
+          "relative rounded-lg border-2 border-dashed text-center transition-colors cursor-pointer",
+          compact ? "p-4" : "p-8",
           isDragActive ? "border-primary bg-primary/5" : "border-gray-300 dark:border-gray-700",
           isProcessing && "opacity-50 cursor-not-allowed"
         )}
@@ -79,23 +81,38 @@ export function FileUploadZone({ onFilesUploaded, isProcessing }: FileUploadZone
 
         <div className="mx-auto flex max-w-[420px] flex-col items-center justify-center text-center">
           <Upload className={cn(
-            "h-10 w-10 mb-3",
+            compact ? "h-8 w-8 mb-2" : "h-10 w-10 mb-3",
             isDragActive ? "text-primary" : "text-muted-foreground"
           )} />
 
-          <h3 className="text-lg font-semibold">
-            {isDragActive ? "Drop your files here" : "Upload Bank Statements"}
-          </h3>
+          {!compact && (
+            <h3 className="text-lg font-semibold">
+              {isDragActive ? "Drop your files here" : "Upload Bank Statements"}
+            </h3>
+          )}
 
-          <p className="text-sm text-muted-foreground mt-2">
-            Drag & drop your bank statements here, or click to browse
+          <p className={cn(
+            "text-sm text-muted-foreground",
+            compact ? "mt-1" : "mt-2"
+          )}>
+            {compact 
+              ? "Drop files or click to browse"
+              : "Drag & drop your bank statements here, or click to browse"}
           </p>
 
-          <p className="text-xs text-muted-foreground mt-1">
-            Supports PDF, CSV, OFX, and QIF formats (Max 10MB per file)
-          </p>
+          {!compact && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Supports PDF, CSV, OFX, and QIF formats (Max 10MB per file)
+            </p>
+          )}
 
-          <Button variant="outline" className="mt-4" disabled={isProcessing}>
+          <Button 
+            variant="outline" 
+            size={compact ? "sm" : "default"}
+            className={compact ? "mt-3" : "mt-4"} 
+            disabled={isProcessing}
+          >
+            <Upload className="mr-2 h-4 w-4" />
             Select Files
           </Button>
         </div>

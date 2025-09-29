@@ -74,18 +74,18 @@ async function main() {
   // Create default groups
   const groups = [
     {
-      name: "Standard Clients",
-      description: "Regular retail clients with standard access",
+      name: "Free Users",
+      description: "Free account users with limited access",
       riskLevel: "LOW" as const,
     },
     {
-      name: "Premium Clients",
-      description: "High-value clients with premium features",
+      name: "Advisory Clients",
+      description: "Trend Advisory clients with full feature access",
       riskLevel: "MEDIUM" as const,
     },
     {
-      name: "VIP Clients",
-      description: "VIP clients with full access to all tools",
+      name: "Premium Advisory Clients",
+      description: "Premium advisory clients with VIP features",
       riskLevel: "HIGH" as const,
     },
   ];
@@ -105,25 +105,27 @@ async function main() {
   // Assign tools to groups
   const activeTools = await prisma.tool.findMany({ where: { isActive: true } });
 
-  // Standard clients get basic tools
-  await prisma.groupTool.createMany({
-    data: activeTools.slice(0, 2).map((tool) => ({
-      groupId: createdGroups[0].id,
-      toolId: tool.id,
-    })),
-    skipDuplicates: true,
-  });
+  // Free users get only basic tools (spending analyzer)
+  const spendingAnalyzer = await prisma.tool.findFirst({ where: { slug: "spending-analyzer" } });
+  if (spendingAnalyzer) {
+    await prisma.groupTool.create({
+      data: {
+        groupId: createdGroups[0].id,
+        toolId: spendingAnalyzer.id,
+      },
+    }).catch(() => {});
+  }
 
-  // Premium clients get more tools
+  // Advisory clients get all active tools
   await prisma.groupTool.createMany({
-    data: activeTools.slice(0, 3).map((tool) => ({
+    data: activeTools.map((tool) => ({
       groupId: createdGroups[1].id,
       toolId: tool.id,
     })),
     skipDuplicates: true,
   });
 
-  // VIP clients get all tools
+  // Premium Advisory clients get all tools (including inactive ones)
   const allTools = await prisma.tool.findMany();
   await prisma.groupTool.createMany({
     data: allTools.map((tool) => ({
@@ -153,31 +155,85 @@ async function main() {
 
   console.log("✅ Admin user created (email: admin@trendadvisory.com, password: admin123)");
 
-  // Create demo customer user
-  const customerPassword = await bcrypt.hash("customer123", 10);
-  const customerUser = await prisma.user.upsert({
-    where: { email: "customer@example.com" },
+  // Create demo advisory client user
+  const clientPassword = await bcrypt.hash("client123", 10);
+  const clientUser = await prisma.user.upsert({
+    where: { email: "client@example.com" },
     update: {},
     create: {
-      email: "customer@example.com",
-      passwordHash: customerPassword,
-      firstName: "John",
-      lastName: "Smith",
+      email: "client@example.com",
+      passwordHash: clientPassword,
+      firstName: "Jane",
+      lastName: "Doe",
+      role: "CUSTOMER",
+      status: "ACTIVE",
+      emailVerified: true,
+      advisorId: "advisor-001",
+    },
+  });
+
+  // Add advisory client to Advisory Clients group
+  await prisma.userGroup.create({
+    data: {
+      userId: clientUser.id,
+      groupId: createdGroups[1].id, // Advisory Clients group
+    },
+  }).catch(() => {}); // Ignore if already exists
+
+  console.log("✅ Advisory client created (email: client@example.com, password: client123)");
+
+  // Create demo FREE user
+  const freePassword = await bcrypt.hash("free123", 10);
+  const freeUser = await prisma.user.upsert({
+    where: { email: "freeuser@example.com" },
+    update: {},
+    create: {
+      email: "freeuser@example.com",
+      passwordHash: freePassword,
+      firstName: "Bob",
+      lastName: "Wilson",
       role: "CUSTOMER",
       status: "ACTIVE",
       emailVerified: true,
     },
   });
 
-  // Add customer to Standard Clients group
+  // Add free user to Free Users group
   await prisma.userGroup.create({
     data: {
-      userId: customerUser.id,
-      groupId: createdGroups[0].id,
+      userId: freeUser.id,
+      groupId: createdGroups[0].id, // Free Users group
     },
   }).catch(() => {}); // Ignore if already exists
 
-  console.log("✅ Customer user created (email: customer@example.com, password: customer123)");
+  console.log("✅ Free user created (email: freeuser@example.com, password: free123)");
+
+  // Create demo premium advisory client
+  const premiumPassword = await bcrypt.hash("premium123", 10);
+  const premiumUser = await prisma.user.upsert({
+    where: { email: "premium@example.com" },
+    update: {},
+    create: {
+      email: "premium@example.com",
+      passwordHash: premiumPassword,
+      firstName: "Victoria",
+      lastName: "Sterling",
+      role: "CUSTOMER",
+      status: "ACTIVE",
+      emailVerified: true,
+      advisorId: "advisor-002",
+    },
+  });
+
+  // Add premium user to Premium Advisory Clients group
+  await prisma.userGroup.create({
+    data: {
+      userId: premiumUser.id,
+      groupId: createdGroups[2].id, // Premium Advisory Clients group
+    },
+  }).catch(() => {}); // Ignore if already exists
+
+  console.log("✅ Premium advisory client created (email: premium@example.com, password: premium123)");
 
   console.log("✨ Database seed completed successfully!");
 }

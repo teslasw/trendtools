@@ -43,10 +43,15 @@ model User {
   mfaEnabled      Boolean           @default(false)
   mfaSecret       String?
   image           String?
+  
+  // Advisory client specific field
+  advisorId       String?           // Assigned financial advisor (if they're a client)
+  
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
   // Relations
+  advisor         Advisor?          @relation(fields: [advisorId], references: [id])
   accounts        Account[]
   sessions        Session[]
   userGroups      UserGroup[]
@@ -270,4 +275,27 @@ model SpendingInsight {
   createdAt     DateTime @default(now())
 
   analysis      SpendingAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+}
+
+model Advisor {
+  id                String   @id @default(cuid())
+  firstName         String
+  lastName          String
+  email             String   @unique
+  phone             String?
+  title             String?  // e.g., "Senior Financial Advisor, CFA"
+  credentials       String?  // e.g., "CFA, CFP"
+  bio               String?
+  specialties       String[] // e.g., ["Retirement Planning", "Tax Optimization", "Investment Strategy"]
+  yearsExperience   Int?
+  profileImageUrl   String?
+  calendlyUrl       String?  // For scheduling
+  availableHours    Json?    // Store availability schedule
+  rating            Float?   @default(4.9)
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  clients           User[]   // All users assigned to this advisor
 }
