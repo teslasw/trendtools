@@ -77,9 +77,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div className="h-screen gradient-bg relative overflow-hidden">
       {/* Combined header and nav wrapper with single shadow */}
-      <div className="fixed top-0 left-0 right-0 z-40" style={{boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.07)"}}>
+      <div className="fixed top-0 left-0 right-0 z-40 header-shadow">
         {/* Header bar */} 
-        <header className="w-full bg-[#090b17]/90 backdrop-blur-md">
+        <header className="w-full bg-secondary backdrop-blur-md">
           <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
           {/* Logo and menu button */}
@@ -178,7 +178,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </header>
 
         {/* Navigation bar */}
-        <nav className="w-full bg-white/90 backdrop-blur-md border-b border-gray-300/50 dark:border-gray-600/50">
+        <nav className="w-full bg-white/90 dark:glass-card border-0 backdrop-blur-md ">
           <div className="max-w-7xl mx-auto px-14 py-4">
           <div className="flex items-center -ml-3 space-x-1 overflow-x-auto">
             {/* Dashboard Link */}
@@ -188,7 +188,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 "flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors whitespace-nowrap",
                 pathname === "/dashboard"
                   ? "bg-secondary text-secondary-foreground"
-                  : "text-[#090b17] dark:text-gray-300 hover:bg-secondary/10 dark:hover:bg-gray-700"
+                  : "text-foreground hover:bg-secondary/10 dark:hover:bg-white/10"
               )}
             >
               <Home className="mr-2 h-4 w-4" />
@@ -203,7 +203,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     "flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors whitespace-nowrap outline-none",
                     pathname.includes("/dashboard/tools")
                       ? "text-secondary dark:text-secondary"
-                      : "text-[#090b17] dark:text-gray-300 hover:text-[#090b17]/80 dark:hover:text-gray-100"
+                      : "text-foreground hover:text-foreground/80"
                   )}
                 >
                   <Wrench className="mr-2 h-4 w-4" />
@@ -225,8 +225,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         pathname === tool.href && "bg-secondary/20"
                       )}
                     >
-                      <tool.icon className="mr-3 h-4 w-4 text-[#090b17] dark:text-gray-300" />
-                      <span className="text-base text-[#090b17] dark:text-gray-300">{tool.name}</span>
+                      <tool.icon className="mr-3 h-4 w-4 text-foreground" />
+                      <span className="text-base text-foreground">{tool.name}</span>
                     </Link>
                   </DropdownMenuItem>
                 ))}
@@ -242,7 +242,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   "flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors whitespace-nowrap",
                   pathname === item.href
                     ? "bg-secondary text-secondary-foreground"
-                    : "text-[#090b17] dark:text-gray-300 hover:bg-secondary/10 dark:hover:bg-gray-700"
+                    : "text-foreground hover:bg-secondary/10 dark:hover:bg-white/10"
                 )}
               >
                 <item.icon className="mr-2 h-4 w-4" />
@@ -262,7 +262,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     "flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors whitespace-nowrap",
                     pathname === item.href
                       ? "bg-secondary text-secondary-foreground"
-                      : "text-[#090b17] dark:text-gray-300 hover:bg-secondary/10 dark:hover:bg-gray-700"
+                      : "text-foreground hover:bg-secondary/10 dark:hover:bg-white/10"
                   )}
                 >
                   <item.icon className="mr-2 h-4 w-4" />
