@@ -55,7 +55,7 @@ interface User {
   status: string;
   emailVerified: boolean;
   createdAt: string;
-  groups?: { group: { id: string; name: string } }[];
+  userGroups?: { group: { id: string; name: string } }[];
   advisorId?: string | null;
   advisor?: {
     id: string;
@@ -167,7 +167,7 @@ export default function UsersManagement() {
       role: user.role,
       status: user.status,
       advisorId: user.advisorId || null,
-      groupIds: user.groups?.map(ug => ug.group.id) || [],
+      groupIds: user.userGroups?.map(ug => ug.group.id) || [],
     });
     setEditDialogOpen(true);
   };
@@ -393,8 +393,8 @@ export default function UsersManagement() {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
-                          {user.groups && user.groups.length > 0 ? (
-                            user.groups.map((ug, index) => (
+                          {user.userGroups && user.userGroups.length > 0 ? (
+                            user.userGroups.map((ug, index) => (
                               <span
                                 key={index}
                                 className="px-2 py-1 bg-gray-100 text-xs rounded"

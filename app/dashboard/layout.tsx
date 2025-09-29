@@ -46,6 +46,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { theme, setTheme } = useTheme();
 
   const isAdmin = session?.user && (session.user as any).role === "ADMIN";
+  const userGroups = (session?.user as any)?.groups || [];
+  const isAdvisoryClient = !userGroups.includes("Free Users") && userGroups.length > 0;
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
@@ -72,7 +74,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="flex flex-col h-screen gradient-bg">
-      {/* Header bar */}
+      {/* Header bar */} 
       <header className="w-full">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
@@ -110,15 +112,31 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="flex items-center space-x-2 rounded-lg hover:bg-white/10 dark:hover:bg-white/10"
+                  className={cn(
+                    "flex items-center space-x-2 rounded-lg relative overflow-hidden",
+                    isAdvisoryClient 
+                      ? "bg-gradient-to-r from-[#00ada7] to-[#2285c5] text-white hover:from-[#009a94] hover:to-[#1d78b5] shadow-lg hover:shadow-xl transform hover:scale-105"
+                      : "hover:bg-white/10 dark:hover:bg-white/10"
+                  )}
                 >
-                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 backdrop-blur-sm flex items-center justify-center">
-                    <User className="h-4 w-4 text-primary dark:text-primary-foreground" />
+                  {isAdvisoryClient && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 animate-shimmer" />
+                  )}
+                  <div className={cn(
+                    "h-8 w-8 rounded-full flex items-center justify-center relative z-10",
+                    isAdvisoryClient
+                      ? "bg-white/20 backdrop-blur-sm"
+                      : "bg-gradient-to-br from-primary/30 to-primary/10 backdrop-blur-sm"
+                  )}>
+                    <User className={cn(
+                      "h-4 w-4",
+                      isAdvisoryClient ? "text-white" : "text-primary dark:text-primary-foreground"
+                    )} />
                   </div>
-                  <span className="hidden sm:inline-block">
+                  <span className="hidden sm:inline-block relative z-10">
                     {session?.user?.name || session?.user?.email?.split('@')[0] || 'User'}
                   </span>
-                  <ChevronDown className="h-4 w-4" />
+                  <ChevronDown className="h-4 w-4 relative z-10" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56 glass-card" align="end">

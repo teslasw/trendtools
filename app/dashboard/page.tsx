@@ -82,13 +82,13 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="py-6">
+    <div className="space-y-6">
       {/* Welcome Section */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">
+      <div className="pt-6">
+        <h1 className="text-3xl font-bold text-[#223145]">
           Welcome back, {firstName}!
         </h1>
-        <p className="text-gray-600 dark:text-gray-400">
+        <p className="text-[#223145]/70 mt-2">
           Here's an overview of your financial status
         </p>
       </div>

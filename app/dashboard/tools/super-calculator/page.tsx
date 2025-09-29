@@ -17,6 +17,7 @@ import { Calculator, DollarSign, TrendingUp, Info, Calendar, Percent, PiggyBank,
 
 export default function SuperCalculatorPage() {
   const { data: session } = useSession();
+  const advisor = (session?.user as any)?.advisor;
   
   // Form state
   const [currentAge, setCurrentAge] = useState("30");
@@ -130,9 +131,9 @@ export default function SuperCalculatorPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">Superannuation Calculator</h1>
-        <p className="text-muted-foreground mt-2">
+      <div className="pt-6">
+        <h1 className="text-3xl font-bold text-[#223145]">Superannuation Calculator</h1>
+        <p className="text-[#223145]/70 mt-2">
           Project your retirement savings and optimize your super strategy
         </p>
       </div>
@@ -336,54 +337,93 @@ export default function SuperCalculatorPage() {
             {/* Subtle overlay gradient for depth */}
             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-sky-100/30 to-blue-100/40 dark:via-sky-900/10 dark:to-blue-900/10" />
             
-            <CardContent className="relative p-6 space-y-4">
-              {/* Top Section - Badges and Avatars */}
-              <div className="flex items-center justify-between">
-                <div className="flex -space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">SA</div>
-                  <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">MC</div>
-                </div>
-                <Badge className="bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300 border-sky-200 dark:border-sky-700">
-                  Expert Advisors
-                </Badge>
-              </div>
-              
-              {/* Middle Section - Text */}
-              <div className="space-y-3 text-center">
-                <h3 className="cta-title-sm">
-                  Ready to maximize your retirement?
-                </h3>
-                <p className="text-sm text-gray-700 dark:text-gray-300">
-                  Our certified advisors can help you optimize contributions and save thousands in fees.
-                </p>
+            <CardContent className="relative p-0">
+              <div className="space-y-4">
+                {/* Advisor Profile Section */}
+                {advisor ? (
+                  <>
+                    <div className="flex flex-col items-center space-y-3 p-6 pb-4">
+                      {advisor.profileImageUrl ? (
+                        <img 
+                          src={advisor.profileImageUrl} 
+                          alt={`${advisor.firstName} ${advisor.lastName}`}
+                          className="w-28 h-28 rounded-full border-4 border-white shadow-xl object-cover"
+                        />
+                      ) : (
+                        <div className="w-28 h-28 rounded-full bg-gradient-to-br from-sky-500 to-blue-500 flex items-center justify-center text-white text-3xl font-bold shadow-xl">
+                          {advisor.firstName[0]}{advisor.lastName[0]}
+                        </div>
+                      )}
+                      <div className="text-center space-y-1">
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Your Advisor</p>
+                        <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                          {advisor.firstName} {advisor.lastName}
+                        </p>
+                        {advisor.title && (
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{advisor.title}</p>
+                        )}
+                      </div>
+                    </div>
+                    {/* Full width horizontal divider */}
+                    <div className="border-t border-gray-200 dark:border-gray-700" />
+                  </>
+                ) : (
+                  <div className="flex items-center justify-between p-6 pb-0">
+                    <div className="flex -space-x-2">
+                      <div className="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">SA</div>
+                      <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">MC</div>
+                    </div>
+                    <Badge className="bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300 border-sky-200 dark:border-sky-700">
+                      Expert Advisors
+                    </Badge>
+                  </div>
+                )}
                 
-                <div className="flex items-center justify-center gap-3 text-xs text-gray-600 dark:text-gray-400">
-                  <div className="flex items-center gap-1">
-                    <CheckCircle className="h-3 w-3 text-sky-500" />
-                    <span>Free</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-3 w-3 text-sky-500" />
-                    <span>15-min</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Star className="h-3 w-3 text-sky-500" />
-                    <span>4.9/5</span>
-                  </div>
+                {/* Middle Section - Text */}
+                <div className="space-y-3 text-center px-6">
+                  <h3 className="cta-title-sm">
+                    {advisor 
+                      ? `Questions about your super performance?`
+                      : `Ready to maximize your retirement?`}
+                  </h3>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    {advisor 
+                      ? `${advisor.firstName} can review your super strategy and help you optimize for better returns.`
+                      : `Our certified advisors can help you optimize contributions and save thousands in fees.`}
+                  </p>
+                  
+                  {!advisor && (
+                    <div className="flex items-center justify-center gap-3 text-xs text-gray-600 dark:text-gray-400">
+                      <div className="flex items-center gap-1">
+                        <CheckCircle className="h-3 w-3 text-sky-500" />
+                        <span>Free</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3 text-sky-500" />
+                        <span>15-min</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Star className="h-3 w-3 text-sky-500" />
+                        <span>4.9/5</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-              
-              {/* Bottom Section - Full Width Button */}
-              <div className="pt-2">
-                <AdvisorContactButton 
-                  context="Super Calculator - Results" 
-                  variant="default"
-                  size="lg"
-                  className="w-full"
-                />
-                <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">
-                  No obligation • Cancel anytime
-                </p>
+                
+                {/* Bottom Section - Full Width Button */}
+                <div className="pt-2 px-6 pb-6">
+                  <AdvisorContactButton 
+                    context="Super Calculator - Results" 
+                    variant="default"
+                    size="lg"
+                    className="w-full"
+                  />
+                  {!advisor && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">
+                      No obligation • Cancel anytime
+                    </p>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -51,7 +51,7 @@ export async function PATCH(
       where: { id: userId },
       data: updateData,
       include: {
-        groups: {
+        userGroups: {
           include: {
             group: true,
           },

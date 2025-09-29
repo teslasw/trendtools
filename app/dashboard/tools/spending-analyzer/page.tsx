@@ -60,6 +60,7 @@ interface SavedSession {
 
 export default function SpendingAnalyzerPage() {
   const { data: session } = useSession();
+  const advisor = (session?.user as any)?.advisor;
   const [sessionName, setSessionName] = useState("");
   const [isSessionStarted, setIsSessionStarted] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -356,10 +357,10 @@ export default function SpendingAnalyzerPage() {
     return (
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-start">
+        <div className="flex justify-between items-start pt-6">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">{sessionName}</h1>
-            <p className="text-muted-foreground mt-2">
+            <h1 className="text-3xl font-bold tracking-tight text-[#223145]">{sessionName}</h1>
+            <p className="text-[#223145]/70 mt-2">
               Analyze your spending patterns with AI-powered insights
             </p>
           </div>
@@ -416,48 +417,89 @@ export default function SpendingAnalyzerPage() {
             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-sky-100/30 to-blue-100/40 dark:via-sky-900/10 dark:to-blue-900/10" />
             
             <CardContent className="relative p-8">
-              <div className="flex items-center justify-between gap-6">
-                <div className="flex-1 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <div className="flex -space-x-2">
-                      <div className="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">SA</div>
-                      <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">MC</div>
+              <div className="flex items-center gap-8">
+                {advisor ? (
+                  /* Advisor Profile Column */
+                  <div className="relative flex items-center">
+                    <div className="flex flex-col items-center space-y-2 pr-8">
+                      {advisor.profileImageUrl ? (
+                        <img 
+                          src={advisor.profileImageUrl} 
+                          alt={`${advisor.firstName} ${advisor.lastName}`}
+                          className="w-24 h-24 rounded-full border-4 border-white shadow-lg object-cover"
+                        />
+                      ) : (
+                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-sky-500 to-blue-500 flex items-center justify-center text-white text-3xl font-bold shadow-lg">
+                          {advisor.firstName[0]}{advisor.lastName[0]}
+                        </div>
+                      )}
+                      <div className="text-center">
+                        <p className="text-xs text-gray-600 dark:text-gray-400">Your Advisor</p>
+                        <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                          {advisor.firstName} {advisor.lastName}
+                        </p>
+                        {advisor.title && (
+                          <p className="text-xs text-gray-600 dark:text-gray-400">{advisor.title}</p>
+                        )}
+                      </div>
                     </div>
-                    <Badge className="bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300 border-sky-200 dark:border-sky-700">
-                      Expert Advisors Available
-                    </Badge>
+                    {/* Full height vertical divider */}
+                    <div className="absolute -top-8 -bottom-8 right-0 border-l border-gray-200 dark:border-gray-700" />
                   </div>
+                ) : null}
+                
+                <div className="flex-1 max-w-2xl space-y-3">
+                  {!advisor && (
+                    <div className="flex items-center gap-2">
+                      <div className="flex -space-x-2">
+                        <div className="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">SA</div>
+                        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">MC</div>
+                      </div>
+                      <Badge className="bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300 border-sky-200 dark:border-sky-700">
+                        Expert Advisors Available
+                      </Badge>
+                    </div>
+                  )}
                   
                   <h3 className="cta-title-lg">
-                    We found ${Math.round(transactions.reduce((sum, t) => sum + Math.abs(t.amount), 0) * 0.15)}/month in potential savings!
+                    {advisor
+                      ? `Questions about your spending patterns?`
+                      : `We found ${Math.round(transactions.reduce((sum, t) => sum + Math.abs(t.amount), 0) * 0.15)}/month in potential savings!`}
                   </h3>
                   <p className="text-sm text-gray-700 dark:text-gray-300">
-                    Our certified advisors can help you optimize your spending, create a budget that works, and achieve your financial goals faster.
+                    {advisor
+                      ? `${advisor.firstName} can help you take control of your spending and create a personalized budget that aligns with your goals.`
+                      : `Our certified advisors can help you optimize your spending, create a budget that works, and achieve your financial goals faster.`}
                   </p>
                   
-                  <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400 pt-2">
-                    <div className="flex items-center gap-1">
-                      <CheckCircle className="h-3 w-3 text-sky-500" />
-                      <span>Free consultation</span>
+                  {!advisor && (
+                    <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400 pt-2">
+                      <div className="flex items-center gap-1">
+                        <CheckCircle className="h-3 w-3 text-sky-500" />
+                        <span>Free consultation</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3 text-sky-500" />
+                        <span>15-min response</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Star className="h-3 w-3 text-sky-500" />
+                        <span>4.9/5 rating</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-3 w-3 text-sky-500" />
-                      <span>15-min response</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Star className="h-3 w-3 text-sky-500" />
-                      <span>4.9/5 rating</span>
-                    </div>
-                  </div>
+                  )}
                 </div>
                 
-                <div className="flex flex-col items-center gap-2">
+                <div className="flex flex-col items-center justify-center gap-2 px-4 min-w-[200px]">
                   <AdvisorContactButton 
                     context="Spending Analyzer - Analysis" 
                     variant="default"
                     size="lg"
-                                      />
-                  <span className="text-xs text-gray-500 dark:text-gray-400">No obligation</span>
+                    className="w-full"
+                  />
+                  {!advisor && (
+                    <span className="text-xs text-gray-500 dark:text-gray-400">No obligation</span>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -577,9 +619,9 @@ export default function SpendingAnalyzerPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">Spending Analyzer</h1>
-        <p className="text-muted-foreground mt-2">
+      <div className="pt-6">
+        <h1 className="text-3xl font-bold text-[#223145]">Spending Analyzer</h1>
+        <p className="text-[#223145]/70 mt-2">
           Upload your bank statements to get AI-powered spending insights
         </p>
       </div>
@@ -589,49 +631,90 @@ export default function SpendingAnalyzerPage() {
         {/* Subtle overlay gradient for depth */}
         <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-sky-100/30 to-blue-100/40 dark:via-sky-900/10 dark:to-blue-900/10" />
         
-        <CardContent className="relative p-8">
-          <div className="flex items-center justify-between gap-6">
-            <div className="flex-1 space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="flex -space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">SA</div>
-                  <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">MC</div>
+        <CardContent className="relative p-8 overflow-hidden">
+          <div className="flex items-center gap-8">
+            {advisor ? (
+              /* Advisor Profile Column */
+              <div className="relative flex items-center">
+                <div className="flex flex-col items-center space-y-2 pr-8">
+                  {advisor.profileImageUrl ? (
+                    <img 
+                      src={advisor.profileImageUrl} 
+                      alt={`${advisor.firstName} ${advisor.lastName}`}
+                      className="w-24 h-24 rounded-full border-4 border-white shadow-lg object-cover"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-sky-500 to-blue-500 flex items-center justify-center text-white text-3xl font-bold shadow-lg">
+                      {advisor.firstName[0]}{advisor.lastName[0]}
+                    </div>
+                  )}
+                  <div className="text-center">
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Your Advisor</p>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      {advisor.firstName} {advisor.lastName}
+                    </p>
+                    {advisor.title && (
+                      <p className="text-xs text-gray-600 dark:text-gray-400">{advisor.title}</p>
+                    )}
+                  </div>
                 </div>
-                <Badge className="bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300 border-sky-200 dark:border-sky-700">
-                  Expert Advisors Available
-                </Badge>
+                {/* Full height vertical divider */}
+                <div className="absolute -top-8 -bottom-8 right-0 border-l border-gray-200 dark:border-gray-700" />
               </div>
+            ) : null}
+            
+            <div className="flex-1 max-w-2xl space-y-3">
+              {!advisor && (
+                <div className="flex items-center gap-2">
+                  <div className="flex -space-x-2">
+                    <div className="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">SA</div>
+                    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">MC</div>
+                  </div>
+                  <Badge className="bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300 border-sky-200 dark:border-sky-700">
+                    Expert Advisors Available
+                  </Badge>
+                </div>
+              )}
               
               <h3 className="cta-title-lg">
-                Start your financial transformation today
+                {advisor
+                  ? `Ready to take control of your spending?`
+                  : `Start your financial transformation today`}
               </h3>
               <p className="text-sm text-gray-700 dark:text-gray-300">
-                Get personalized guidance from certified financial advisors who can help you budget, save, invest, and achieve your financial goals.
+                {advisor
+                  ? `${advisor.firstName} is here to help you understand your spending habits and create a sustainable budget that works for your lifestyle.`
+                  : `Get personalized guidance from certified financial advisors who can help you budget, save, invest, and achieve your financial goals.`}
               </p>
               
-              <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400 pt-2">
-                <div className="flex items-center gap-1">
-                  <CheckCircle className="h-3 w-3 text-sky-500" />
-                  <span>Free consultation</span>
+              {!advisor && (
+                <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400 pt-2">
+                  <div className="flex items-center gap-1">
+                    <CheckCircle className="h-3 w-3 text-sky-500" />
+                    <span>Free consultation</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-3 w-3 text-sky-500" />
+                    <span>15-min response</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Star className="h-3 w-3 text-sky-500" />
+                    <span>4.9/5 rating</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Clock className="h-3 w-3 text-sky-500" />
-                  <span>15-min response</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Star className="h-3 w-3 text-sky-500" />
-                  <span>4.9/5 rating</span>
-                </div>
-              </div>
+              )}
             </div>
             
-            <div className="flex flex-col items-center gap-2">
+            <div className="flex flex-col items-center justify-center gap-2 px-4 min-w-[200px]">
               <AdvisorContactButton 
                 context="Spending Analyzer - Welcome" 
                 variant="default"
                 size="lg"
-                              />
-              <span className="text-xs text-gray-500 dark:text-gray-400">No obligation</span>
+                className="w-full"
+              />
+              {!advisor && (
+                <span className="text-xs text-gray-500 dark:text-gray-400">No obligation</span>
+              )}
             </div>
           </div>
         </CardContent>

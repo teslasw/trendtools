@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     const users = await prisma.user.findMany({
       where,
       include: {
-        groups: {
+        userGroups: {
           include: {
             group: {
               select: {

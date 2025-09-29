@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
-import { Inter, Caveat, Dancing_Script, Kalam, Pacifico, Righteous, Bebas_Neue } from "next/font/google";
+import { Inter, Caveat, Dancing_Script, Kalam, Pacifico, Righteous, Bebas_Neue, Manrope } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Providers } from "./providers";
 
 const inter = Inter({ subsets: ["latin"] });
+const manrope = Manrope({ 
+  subsets: ["latin"],
+  variable: "--font-manrope",
+  weight: ["400", "500", "600", "700", "800"]
+});
 const caveat = Caveat({ 
   subsets: ["latin"],
   variable: "--font-caveat",
@@ -48,7 +53,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} ${caveat.variable} ${dancingScript.variable} ${kalam.variable} ${pacifico.variable} ${righteous.variable} ${bebasNeue.variable}`} suppressHydrationWarning>
+      <body className={`${inter.className} ${manrope.variable} ${caveat.variable} ${dancingScript.variable} ${kalam.variable} ${pacifico.variable} ${righteous.variable} ${bebasNeue.variable}`} suppressHydrationWarning>
         <Providers>
           {children}
         </Providers>

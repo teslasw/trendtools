@@ -36,7 +36,7 @@
   --sidebar-accent-foreground: oklch(0.24 0 0);
   --sidebar-border: oklch(0.90 0 0);
   --sidebar-ring: oklch(0.67 0.09 192.39);
-  --font-sans: Outfit, sans-serif;
+  --font-sans: Inter, sans-serif;
   --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono: monospace;
   --radius: 0.5rem;
@@ -105,13 +105,12 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-[#f3f6f6] text-foreground;
     letter-spacing: var(--tracking-tighter);
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Inter Tight', sans-serif;
-    font-weight: 600;
-    letter-spacing: -0.02em;
+    font-family: var(--font-manrope), sans-serif;
+    @apply font-semibold tracking-tight;
   }
 }
 
@@ -175,14 +174,13 @@
 
   .gradient-bg {
     background: linear-gradient(135deg,
-      oklch(0.97 0.015 190) 0%,
-      oklch(0.96 0.02 220) 25%,
-      oklch(0.98 0.01 180) 50%,
-      oklch(0.97 0.015 200) 75%,
-      oklch(0.96 0.01 170) 100%);
+      #e8f4f8 0%,
+      #d4e8f0 20%,
+      #c7e9e7 40%,
+      #dbeef5 60%,
+      #e3f0f7 80%,
+      #e8f4f8 100%);
     background-attachment: fixed;
-    background-size: 200% 200%;
-    animation: gradient-shift 15s ease infinite;
   }
 
   .dark .gradient-bg {
@@ -193,8 +191,6 @@
       oklch(0.21 0.012 200) 75%,
       oklch(0.19 0.008 170) 100%);
     background-attachment: fixed;
-    background-size: 200% 200%;
-    animation: gradient-shift 15s ease infinite;
   }
 
   @keyframes gradient-shift {
@@ -222,8 +218,21 @@
     }
   }
   
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(200%);
+    }
+  }
+  
   .animate-gradient-morph {
     animation: gradient-morph 15s ease-in-out infinite;
+  }
+  
+  .animate-shimmer {
+    animation: shimmer 3s ease-in-out infinite;
   }
   
   /* Primary button with Trend Advisory gradient */
@@ -235,7 +244,7 @@
   .primary-btn:hover {
     background-image: linear-gradient(to right, #009a94, #1d78b5);
   }
-  
+   
   /* Handwriting fonts */
   .font-caveat {
     font-family: var(--font-caveat), cursive;
