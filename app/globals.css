@@ -12,7 +12,7 @@
   --popover-foreground: oklch(0.44 0 0);
   --primary: oklch(0.67 0.09 192.39);
   --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.2336 0.0131 258.3714);
+  --secondary: #090b17;
   --secondary-foreground: oklch(0.99 0 0);
   --muted: oklch(0.95 0 0);
   --muted-foreground: oklch(0.24 0 0);
@@ -52,7 +52,7 @@
 }
 
 .dark {
-  --background: oklch(0.18 0 0);
+  --background: oklch(0.12 0.02 230);
   --foreground: oklch(0.93 0.01 255.51);
   --card: oklch(0.20 0 0);
   --card-foreground: oklch(0.93 0.01 255.51);
@@ -60,7 +60,7 @@
   --popover-foreground: oklch(0.73 0 0);
   --primary: oklch(0.44 0.10 156.76);
   --primary-foreground: oklch(0.92 0.01 167.16);
-  --secondary: oklch(0.26 0 0);
+  --secondary: #090b17;
   --secondary-foreground: oklch(0.99 0 0);
   --muted: oklch(0.24 0 0);
   --muted-foreground: oklch(0.71 0 0);
@@ -110,6 +110,7 @@
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-manrope), sans-serif;
+    color: #06405e;
     @apply font-semibold tracking-tight;
   }
 }
@@ -123,11 +124,19 @@
   }
 
   .glass-card {
-    background: rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 1);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.3);
     box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  }
+  
+  .dark .glass-card {
+    background: rgba(9, 11, 23, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
   }
 
   .glass-sidebar {
@@ -183,13 +192,17 @@
     background-attachment: fixed;
   }
 
+  .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+    color: white;
+  }
+  
   .dark .gradient-bg {
     background: linear-gradient(135deg,
-      oklch(0.22 0.01 190) 0%,
-      oklch(0.20 0.015 220) 25%,
-      oklch(0.23 0.008 180) 50%,
-      oklch(0.21 0.012 200) 75%,
-      oklch(0.19 0.008 170) 100%);
+      oklch(0.12 0.02 230) 0%,
+      oklch(0.13 0.025 240) 25%,
+      oklch(0.11 0.018 220) 50%,
+      oklch(0.12 0.022 235) 75%,
+      oklch(0.10 0.02 225) 100%);
     background-attachment: fixed;
   }
 

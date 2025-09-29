@@ -85,10 +85,10 @@ export default function DashboardPage() {
     <div className="space-y-6">
       {/* Welcome Section */}
       <div className="pt-6">
-        <h1 className="text-3xl font-bold text-[#223145]">
+        <h1 className="text-3xl font-bold">
           Welcome back, {firstName}!
         </h1>
-        <p className="text-[#223145]/70 mt-2">
+        <p className="text-muted-foreground mt-2">
           Here's an overview of your financial status
         </p>
       </div>
@@ -104,7 +104,7 @@ export default function DashboardPage() {
               <div className="text-2xl font-bold mb-2">{stat.value}</div>
               <div className={cn(
                 "text-sm flex items-center",
-                stat.trend === "up" && "text-green-600",
+                stat.trend === "up" && "text-emerald-600 dark:text-emerald-500",
                 stat.trend === "down" && "text-red-600",
                 stat.trend === "neutral" && "text-gray-600"
               )}>
@@ -125,8 +125,8 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {quickActions.map((action) => (
             <Link key={action.title} href={action.href}>
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
-                <CardHeader>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full flex flex-col">
+                <CardHeader className="flex-1">
                   <div className={cn("p-3 rounded-lg w-fit mb-2", action.bgColor)}>
                     <action.icon className={cn("h-6 w-6", action.color)} />
                   </div>
@@ -171,7 +171,7 @@ export default function DashboardPage() {
                   </div>
                   <span className={cn(
                     "font-semibold",
-                    transaction.amount.startsWith("+") ? "text-green-600" : "text-red-600"
+                    transaction.amount.startsWith("+") ? "text-emerald-600 dark:text-emerald-500" : "text-red-600"
                   )}>
                     {transaction.amount}
                   </span>
@@ -208,9 +208,9 @@ export default function DashboardPage() {
                     <span className="font-medium">{goal.goal}</span>
                     <span className="text-gray-500">{goal.target}</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div
-                      className="bg-primary h-2 rounded-full transition-all"
+                      className="bg-emerald-500 dark:bg-emerald-600 h-2 rounded-full transition-all"
                       style={{ width: `${goal.progress}%` }}
                     />
                   </div>

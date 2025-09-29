@@ -359,8 +359,8 @@ export default function SpendingAnalyzerPage() {
         {/* Header */}
         <div className="flex justify-between items-start pt-6">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-[#223145]">{sessionName}</h1>
-            <p className="text-[#223145]/70 mt-2">
+            <h1 className="text-3xl font-bold tracking-tight">{sessionName}</h1>
+            <p className="text-muted-foreground mt-2">
               Analyze your spending patterns with AI-powered insights
             </p>
           </div>
@@ -525,7 +525,7 @@ export default function SpendingAnalyzerPage() {
           <TabsContent value="upload" className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
               {/* Connect Bank Card */}
-              <Card className="glass-card border-0 shadow-xl">
+              <Card className="glass-card border-0">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Building2 className="h-5 w-5" />
@@ -565,7 +565,7 @@ export default function SpendingAnalyzerPage() {
               </Card>
 
               {/* Manual Upload Card */}
-              <Card className="glass-card border-0 shadow-xl">
+              <Card className="glass-card border-0">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Upload className="h-5 w-5" />
@@ -587,7 +587,7 @@ export default function SpendingAnalyzerPage() {
           </TabsContent>
 
           <TabsContent value="transactions" className="space-y-4">
-            <Card className="glass-card border-0 shadow-xl">
+            <Card className="glass-card border-0">
               <CardHeader>
                 <CardTitle>Review Transactions</CardTitle>
                 <CardDescription>
@@ -620,7 +620,7 @@ export default function SpendingAnalyzerPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="pt-6">
-        <h1 className="text-3xl font-bold text-[#223145]">Spending Analyzer</h1>
+        <h1 className="text-3xl font-bold">Spending Analyzer</h1>
         <p className="text-[#223145]/70 mt-2">
           Upload your bank statements to get AI-powered spending insights
         </p>
@@ -723,7 +723,7 @@ export default function SpendingAnalyzerPage() {
       {/* Quick Actions */}
       <div className="grid md:grid-cols-3 gap-4">
         <Card 
-          className="glass-card border-0 shadow-xl cursor-pointer hover:shadow-2xl transition-shadow"
+          className="glass-card border-0 cursor-pointer hover:shadow-lg transition-shadow"
           onClick={() => setShowNewAnalysisDialog(true)}
         >
           <CardHeader>
@@ -739,8 +739,8 @@ export default function SpendingAnalyzerPage() {
 
         <Card 
           className={cn(
-            "glass-card border-0 shadow-xl transition-shadow",
-            isClient ? "cursor-pointer hover:shadow-2xl" : "opacity-75"
+            "glass-card border-0 transition-shadow",
+            isClient ? "cursor-pointer hover:shadow-lg" : "opacity-75"
           )}
           onClick={isClient ? handleConnectBank : undefined}
         >
@@ -761,7 +761,7 @@ export default function SpendingAnalyzerPage() {
         </Card>
 
         <Card 
-          className="glass-card border-0 shadow-xl cursor-pointer hover:shadow-2xl transition-shadow"
+          className="glass-card border-0 cursor-pointer hover:shadow-lg transition-shadow"
           onClick={() => setShowSavedSessions(!showSavedSessions)}
         >
           <CardHeader>
@@ -778,7 +778,7 @@ export default function SpendingAnalyzerPage() {
 
       {/* Saved Sessions */}
       {showSavedSessions && (
-        <Card className="glass-card border-0 shadow-xl">
+        <Card className="glass-card border-0">
           <CardHeader>
             <CardTitle>Your Saved Sessions</CardTitle>
             <CardDescription>

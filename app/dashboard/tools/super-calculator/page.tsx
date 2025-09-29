@@ -132,8 +132,8 @@ export default function SuperCalculatorPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="pt-6">
-        <h1 className="text-3xl font-bold text-[#223145]">Superannuation Calculator</h1>
-        <p className="text-[#223145]/70 mt-2">
+        <h1 className="text-3xl font-bold">Superannuation Calculator</h1>
+        <p className="text-muted-foreground mt-2">
           Project your retirement savings and optimize your super strategy
         </p>
       </div>

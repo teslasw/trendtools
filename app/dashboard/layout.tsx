@@ -24,6 +24,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
+import Image from "next/image";
 import { useTheme } from "next-themes";
 import {
   DropdownMenu,
@@ -34,6 +35,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { Footer } from "@/components/ui/footer";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -73,10 +75,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   };
 
   return (
-    <div className="flex flex-col h-screen gradient-bg">
-      {/* Header bar */} 
-      <header className="w-full">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+    <div className="h-screen gradient-bg relative overflow-hidden">
+      {/* Combined header and nav wrapper with single shadow */}
+      <div className="fixed top-0 left-0 right-0 z-40" style={{boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.07)"}}>
+        {/* Header bar */} 
+        <header className="w-full bg-[#090b17]/90 backdrop-blur-md">
+          <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
           {/* Logo and menu button */}
           <div className="flex items-center space-x-4">
@@ -84,10 +88,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               onClick={() => setSidebarOpen(true)}
               className="lg:hidden"
             >
-              <Menu className="h-6 w-6" />
+              <Menu className="h-6 w-6 text-white" />
             </button>
             <Link href="/dashboard" className="flex items-center">
-              <Logo width={160} height={36} />
+              <Image 
+                src="/logo-light.png"
+                alt="Trend Advisory"
+                width={160}
+                height={36}
+                priority
+              />
             </Link>
           </div>
 
@@ -101,9 +111,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               className="rounded-lg hover:bg-white/10 dark:hover:bg-white/10"
             >
               {theme === "dark" ? (
-                <Sun className="h-5 w-5" />
+                <Sun className="h-5 w-5 text-white" />
               ) : (
-                <Moon className="h-5 w-5" />
+                <Moon className="h-5 w-5 text-white" />
               )}
             </Button>
 
@@ -113,30 +123,22 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 <Button
                   variant="ghost"
                   className={cn(
-                    "flex items-center space-x-2 rounded-lg relative overflow-hidden",
-                    isAdvisoryClient 
-                      ? "bg-gradient-to-r from-[#00ada7] to-[#2285c5] text-white hover:from-[#009a94] hover:to-[#1d78b5] shadow-lg hover:shadow-xl transform hover:scale-105"
-                      : "hover:bg-white/10 dark:hover:bg-white/10"
+                    "flex items-center space-x-2 rounded-lg",
+                    "hover:bg-white/10 dark:hover:bg-white/10"
                   )}
                 >
-                  {isAdvisoryClient && (
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 animate-shimmer" />
-                  )}
                   <div className={cn(
-                    "h-8 w-8 rounded-full flex items-center justify-center relative z-10",
+                    "h-8 w-8 rounded-full flex items-center justify-center",
                     isAdvisoryClient
                       ? "bg-white/20 backdrop-blur-sm"
                       : "bg-gradient-to-br from-primary/30 to-primary/10 backdrop-blur-sm"
                   )}>
-                    <User className={cn(
-                      "h-4 w-4",
-                      isAdvisoryClient ? "text-white" : "text-primary dark:text-primary-foreground"
-                    )} />
+                    <User className="h-4 w-4 text-white" />
                   </div>
-                  <span className="hidden sm:inline-block relative z-10">
+                  <span className="hidden sm:inline-block text-white">
                     {session?.user?.name || session?.user?.email?.split('@')[0] || 'User'}
                   </span>
-                  <ChevronDown className="h-4 w-4 relative z-10" />
+                  <ChevronDown className="h-4 w-4 text-white" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56 glass-card" align="end">
@@ -172,21 +174,21 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </DropdownMenu>
             </div>
           </div>
-        </div>
-      </header>
+          </div>
+        </header>
 
-      {/* Navigation bar */}
-      <nav className="w-full border-b border-gray-300 dark:border-gray-600">
-        <div className="max-w-7xl mx-auto px-14 py-4">
+        {/* Navigation bar */}
+        <nav className="w-full bg-white/90 backdrop-blur-md border-b border-gray-300/50 dark:border-gray-600/50">
+          <div className="max-w-7xl mx-auto px-14 py-4">
           <div className="flex items-center -ml-3 space-x-1 overflow-x-auto">
             {/* Dashboard Link */}
             <Link
               href="/dashboard"
               className={cn(
-                "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap",
+                "flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors whitespace-nowrap",
                 pathname === "/dashboard"
                   ? "bg-secondary text-secondary-foreground"
-                  : "text-gray-700 dark:text-gray-300 hover:bg-secondary/10 dark:hover:bg-gray-700"
+                  : "text-[#090b17] dark:text-gray-300 hover:bg-secondary/10 dark:hover:bg-gray-700"
               )}
             >
               <Home className="mr-2 h-4 w-4" />
@@ -198,10 +200,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <DropdownMenuTrigger asChild>
                 <button
                   className={cn(
-                    "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap outline-none",
+                    "flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors whitespace-nowrap outline-none",
                     pathname.includes("/dashboard/tools")
                       ? "text-secondary dark:text-secondary"
-                      : "text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
+                      : "text-[#090b17] dark:text-gray-300 hover:text-[#090b17]/80 dark:hover:text-gray-100"
                   )}
                 >
                   <Wrench className="mr-2 h-4 w-4" />
@@ -223,8 +225,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         pathname === tool.href && "bg-secondary/20"
                       )}
                     >
-                      <tool.icon className="mr-3 h-4 w-4" />
-                      <span className="text-sm">{tool.name}</span>
+                      <tool.icon className="mr-3 h-4 w-4 text-[#090b17] dark:text-gray-300" />
+                      <span className="text-base text-[#090b17] dark:text-gray-300">{tool.name}</span>
                     </Link>
                   </DropdownMenuItem>
                 ))}
@@ -237,10 +239,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap",
+                  "flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors whitespace-nowrap",
                   pathname === item.href
                     ? "bg-secondary text-secondary-foreground"
-                    : "text-gray-700 dark:text-gray-300 hover:bg-secondary/10 dark:hover:bg-gray-700"
+                    : "text-[#090b17] dark:text-gray-300 hover:bg-secondary/10 dark:hover:bg-gray-700"
                 )}
               >
                 <item.icon className="mr-2 h-4 w-4" />
@@ -257,10 +259,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap",
+                    "flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors whitespace-nowrap",
                     pathname === item.href
                       ? "bg-secondary text-secondary-foreground"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-secondary/10 dark:hover:bg-gray-700"
+                      : "text-[#090b17] dark:text-gray-300 hover:bg-secondary/10 dark:hover:bg-gray-700"
                   )}
                 >
                   <item.icon className="mr-2 h-4 w-4" />
@@ -270,8 +272,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </>
           )}
           </div>
-        </div>
-      </nav>
+          </div>
+        </nav>
+      </div>
 
       {/* Mobile sidebar backdrop */}
       <div
@@ -396,10 +399,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       </div>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto">
+      <main className="overflow-auto h-full pt-[160px]">
         <div className="max-w-7xl mx-auto px-14 py-6">
           {children}
         </div>
+        <Footer />
       </main>
     </div>
   );
