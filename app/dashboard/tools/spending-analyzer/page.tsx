@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ClientOnlyBadge } from "@/components/ui/client-badge";
 import { AdvisorContactButton } from "@/components/advisor-contact";
+import { BasiqConnect } from "@/components/basiq-connect";
 import {
   Dialog,
   DialogContent,
@@ -72,6 +73,8 @@ export default function SpendingAnalyzerPage() {
   const [showSavedSessions, setShowSavedSessions] = useState(false);
   const [currentAnalysisId, setCurrentAnalysisId] = useState<string | null>(null);
   const [showNewAnalysisDialog, setShowNewAnalysisDialog] = useState(false);
+  const [connectingBank, setConnectingBank] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<string | null>(null);
 
   // Check if user is a client (not in Free Users group)
   const userGroups = (session?.user as any)?.groups || [];
@@ -167,12 +170,14 @@ export default function SpendingAnalyzerPage() {
     }
   };
 
-  const handleConnectBank = () => {
-    if (!advisor) {
-      return;
-    }
-    // TODO: Implement bank connection
-    console.log("Connecting to bank...");
+  const handleBankConnectionSuccess = (userId: string, connectionId: string) => {
+    console.log("Bank connected successfully:", { userId, connectionId });
+    // Optionally refresh saved sessions or reload page
+    fetchSavedSessions();
+  };
+
+  const handleBankConnectionError = (error: string) => {
+    console.error("Bank connection error:", error);
   };
 
   const handleFilesUploaded = async (files: File[]) => {
@@ -550,15 +555,11 @@ export default function SpendingAnalyzerPage() {
                   </CardHeader>
                   <CardContent>
                     {advisor ? (
-                      <Button 
-                        className="w-full" 
-                        size="lg"
-                        onClick={handleConnectBank}
-                        variant="default"
-                      >
-                        <Building2 className="mr-2 h-4 w-4" />
-                        Connect Bank Account
-                      </Button>
+                      <BasiqConnect
+                        onSuccess={handleBankConnectionSuccess}
+                        onError={handleBankConnectionError}
+                        className="w-full"
+                      />
                     ) : (
                       <Button 
                         className="w-full" 
@@ -771,10 +772,9 @@ export default function SpendingAnalyzerPage() {
 
         <Card 
           className={cn(
-            "glass-card border-0 transition-shadow",
-            advisor ? "cursor-pointer hover:shadow-lg" : "opacity-75"
+            "glass-card border-0",
+            !advisor && "opacity-75"
           )}
-          onClick={advisor ? handleConnectBank : undefined}
         >
           <CardHeader>
             <div className="h-12 w-12 rounded-full bg-amber-500/10 flex items-center justify-center mb-3">
@@ -794,6 +794,27 @@ export default function SpendingAnalyzerPage() {
                 : "Available for advisory clients only"}
             </CardDescription>
           </CardHeader>
+          {advisor ? (
+            <CardContent className="pt-0">
+              <BasiqConnect
+                onSuccess={handleBankConnectionSuccess}
+                onError={handleBankConnectionError}
+                disabled={!advisor}
+              />
+            </CardContent>
+          ) : (
+            <CardContent className="pt-0">
+              <Button 
+                className="w-full" 
+                size="lg"
+                disabled
+                variant="outline"
+              >
+                <Lock className="mr-2 h-4 w-4" />
+                Clients Only
+              </Button>
+            </CardContent>
+          )}
         </Card>
 
         <Card 
