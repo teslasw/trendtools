@@ -225,4 +225,49 @@
   .animate-gradient-morph {
     animation: gradient-morph 15s ease-in-out infinite;
   }
+  
+  /* Primary button with Trend Advisory gradient */
+  .primary-btn {
+    @apply bg-gradient-to-r from-[#00ada7] to-[#2285c5] text-white border-0 shadow-lg hover:shadow-xl transition-all transform hover:scale-105 font-semibold;
+    background-image: linear-gradient(to right, #00ada7, #2285c5);
+  }
+  
+  .primary-btn:hover {
+    background-image: linear-gradient(to right, #009a94, #1d78b5);
+  }
+  
+  /* Handwriting fonts */
+  .font-caveat {
+    font-family: var(--font-caveat), cursive;
+  }
+  
+  .font-dancing {
+    font-family: var(--font-dancing), cursive;
+  }
+  
+  .font-kalam {
+    font-family: var(--font-kalam), cursive;
+  }
+  
+  /* Gradient text with Trend Advisory colors */
+  .gradient-text {
+    @apply bg-gradient-to-r from-[#00ada7] to-[#2285c5] bg-clip-text text-transparent;
+  }
+  
+  .gradient-text-bold {
+    @apply bg-gradient-to-r from-[#00ada7] to-[#2285c5] bg-clip-text text-transparent font-bold;
+  }
+  
+  /* CTA title styles */
+  .cta-title {
+    @apply font-bold bg-gradient-to-r from-[#007570] to-[#15598a] bg-clip-text text-transparent;
+  }
+  
+  .cta-title-sm {
+    @apply text-2xl cta-title;
+  }
+  
+  .cta-title-lg {
+    @apply text-3xl cta-title;
+  }
 }

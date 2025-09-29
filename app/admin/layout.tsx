@@ -56,6 +56,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const adminNavigation = [
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
     { name: "Users", href: "/admin/users", icon: Users },
+    { name: "Advisors", href: "/admin/advisors", icon: User },
     { name: "Groups", href: "/admin/groups", icon: Shield },
     { name: "Settings", href: "/admin/settings", icon: Settings },
     { name: "Activity Logs", href: "/admin/activity", icon: Activity },

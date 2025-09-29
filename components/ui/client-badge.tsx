@@ -3,7 +3,7 @@ import { Lock, Crown } from "lucide-react";
 
 export function ClientOnlyBadge() {
   return (
-    <Badge variant="secondary" className="ml-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 text-xs">
+    <Badge variant="secondary" className="ml-1 bg-gradient-to-r from-[#00ada7] to-[#2285c5] text-white border-0 text-xs">
       <Lock className="w-3 h-3 mr-1" />
       Clients Only
     </Badge>

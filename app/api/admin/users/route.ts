@@ -33,9 +33,17 @@ export async function GET(request: NextRequest) {
           include: {
             group: {
               select: {
+                id: true,
                 name: true,
               },
             },
+          },
+        },
+        advisor: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
           },
         },
       },

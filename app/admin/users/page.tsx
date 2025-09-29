@@ -55,7 +55,26 @@ interface User {
   status: string;
   emailVerified: boolean;
   createdAt: string;
-  groups?: { group: { name: string } }[];
+  groups?: { group: { id: string; name: string } }[];
+  advisorId?: string | null;
+  advisor?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  } | null;
+}
+
+interface Group {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+interface Advisor {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
 }
 
 export default function UsersManagement() {
@@ -68,10 +87,55 @@ export default function UsersManagement() {
   const [roleFilter, setRoleFilter] = useState("all");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [advisors, setAdvisors] = useState<Advisor[]>([]);
+  const [editFormData, setEditFormData] = useState<{
+    firstName: string;
+    lastName: string;
+    phone: string;
+    role: string;
+    status: string;
+    advisorId: string | null;
+    groupIds: string[];
+  }>({
+    firstName: "",
+    lastName: "",
+    phone: "",
+    role: "CUSTOMER",
+    status: "ACTIVE",
+    advisorId: null,
+    groupIds: [],
+  });
 
   useEffect(() => {
     fetchUsers();
+    fetchGroups();
+    fetchAdvisors();
   }, [statusFilter, roleFilter]);
+
+  const fetchGroups = async () => {
+    try {
+      const response = await fetch("/api/admin/groups");
+      if (response.ok) {
+        const data = await response.json();
+        setGroups(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch groups:", error);
+    }
+  };
+
+  const fetchAdvisors = async () => {
+    try {
+      const response = await fetch("/api/admin/advisors");
+      if (response.ok) {
+        const data = await response.json();
+        setAdvisors(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch advisors:", error);
+    }
+  };
 
   const fetchUsers = async () => {
     try {
@@ -91,6 +155,48 @@ export default function UsersManagement() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEditUser = (user: User) => {
+    setSelectedUser(user);
+    setEditFormData({
+      firstName: user.firstName || "",
+      lastName: user.lastName || "",
+      phone: user.phone || "",
+      role: user.role,
+      status: user.status,
+      advisorId: user.advisorId || null,
+      groupIds: user.groups?.map(ug => ug.group.id) || [],
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveUser = async () => {
+    if (!selectedUser) return;
+
+    try {
+      const response = await fetch(`/api/admin/users/${selectedUser.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editFormData),
+      });
+
+      if (!response.ok) throw new Error("Failed to update user");
+
+      toast({
+        title: "Success",
+        description: "User updated successfully",
+      });
+
+      setEditDialogOpen(false);
+      fetchUsers();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update user",
+        variant: "destructive",
+      });
     }
   };
 
@@ -242,6 +348,7 @@ export default function UsersManagement() {
                     <TableHead>Role</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Groups</TableHead>
+                    <TableHead>Advisor</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -301,6 +408,15 @@ export default function UsersManagement() {
                         </div>
                       </TableCell>
                       <TableCell>
+                        {user.advisor ? (
+                          <span className="text-sm">
+                            {user.advisor.firstName} {user.advisor.lastName}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">Not assigned</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         {new Date(user.createdAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right">
@@ -308,10 +424,7 @@ export default function UsersManagement() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => {
-                              setSelectedUser(user);
-                              setEditDialogOpen(true);
-                            }}
+                            onClick={() => handleEditUser(user)}
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -357,15 +470,15 @@ export default function UsersManagement() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
             <DialogDescription>
-              Update user information and permissions
+              Update user information, advisor assignment, and group membership
             </DialogDescription>
           </DialogHeader>
           {selectedUser && (
-            <div className="space-y-4">
+            <div className="space-y-4 max-h-[600px] overflow-y-auto">
               <div>
                 <Label>Email</Label>
                 <Input value={selectedUser.email} disabled />
@@ -373,42 +486,112 @@ export default function UsersManagement() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>First Name</Label>
-                  <Input value={selectedUser.firstName || ""} />
+                  <Input 
+                    value={editFormData.firstName} 
+                    onChange={(e) => setEditFormData({...editFormData, firstName: e.target.value})}
+                  />
                 </div>
                 <div>
                   <Label>Last Name</Label>
-                  <Input value={selectedUser.lastName || ""} />
+                  <Input 
+                    value={editFormData.lastName}
+                    onChange={(e) => setEditFormData({...editFormData, lastName: e.target.value})}
+                  />
                 </div>
               </div>
               <div>
-                <Label>Role</Label>
-                <Select defaultValue={selectedUser.role}>
+                <Label>Phone</Label>
+                <Input 
+                  value={editFormData.phone}
+                  onChange={(e) => setEditFormData({...editFormData, phone: e.target.value})}
+                  placeholder="+1 (555) 123-4567"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Role</Label>
+                  <Select 
+                    value={editFormData.role}
+                    onValueChange={(value) => setEditFormData({...editFormData, role: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ADMIN">Admin</SelectItem>
+                      <SelectItem value="CUSTOMER">Customer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Status</Label>
+                  <Select 
+                    value={editFormData.status}
+                    onValueChange={(value) => setEditFormData({...editFormData, status: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ACTIVE">Active</SelectItem>
+                      <SelectItem value="SUSPENDED">Suspended</SelectItem>
+                      <SelectItem value="INVITED">Invited</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label>Assigned Advisor</Label>
+                <Select 
+                  value={editFormData.advisorId || "none"}
+                  onValueChange={(value) => setEditFormData({...editFormData, advisorId: value === "none" ? null : value})}
+                >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Select an advisor" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ADMIN">Admin</SelectItem>
-                    <SelectItem value="CUSTOMER">Customer</SelectItem>
+                    <SelectItem value="none">No Advisor</SelectItem>
+                    {advisors.map((advisor) => (
+                      <SelectItem key={advisor.id} value={advisor.id}>
+                        {advisor.firstName} {advisor.lastName} ({advisor.email})
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>Status</Label>
-                <Select defaultValue={selectedUser.status}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ACTIVE">Active</SelectItem>
-                    <SelectItem value="SUSPENDED">Suspended</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>Group Membership</Label>
+                <div className="space-y-2 mt-2 border rounded-md p-3 max-h-32 overflow-y-auto">
+                  {groups.map((group) => (
+                    <div key={group.id} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id={`group-${group.id}`}
+                        checked={editFormData.groupIds.includes(group.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setEditFormData({...editFormData, groupIds: [...editFormData.groupIds, group.id]});
+                          } else {
+                            setEditFormData({...editFormData, groupIds: editFormData.groupIds.filter(id => id !== group.id)});
+                          }
+                        }}
+                        className="rounded border-gray-300"
+                      />
+                      <label htmlFor={`group-${group.id}`} className="text-sm cursor-pointer">
+                        {group.name}
+                        {group.description && (
+                          <span className="text-xs text-gray-500 ml-2">({group.description})</span>
+                        )}
+                      </label>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="flex justify-end space-x-2">
+              <div className="flex justify-end space-x-2 pt-4 border-t">
                 <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button>Save Changes</Button>
+                <Button onClick={handleSaveUser}>Save Changes</Button>
               </div>
             </div>
           )}

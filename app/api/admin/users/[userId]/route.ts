@@ -19,7 +19,7 @@ export async function PATCH(
 
     const { userId } = await params;
     const body = await request.json();
-    const { status, role, firstName, lastName, phone } = body;
+    const { status, role, firstName, lastName, phone, advisorId, groupIds } = body;
 
     const updateData: any = {};
     if (status !== undefined) updateData.status = status;
@@ -27,10 +27,37 @@ export async function PATCH(
     if (firstName !== undefined) updateData.firstName = firstName;
     if (lastName !== undefined) updateData.lastName = lastName;
     if (phone !== undefined) updateData.phone = phone;
+    if (advisorId !== undefined) updateData.advisorId = advisorId;
+
+    // Handle group updates separately
+    if (groupIds !== undefined) {
+      // First, remove all existing group associations
+      await prisma.userGroup.deleteMany({
+        where: { userId },
+      });
+
+      // Then, create new group associations
+      if (groupIds.length > 0) {
+        await prisma.userGroup.createMany({
+          data: groupIds.map((groupId: string) => ({
+            userId,
+            groupId,
+          })),
+        });
+      }
+    }
 
     const user = await prisma.user.update({
       where: { id: userId },
       data: updateData,
+      include: {
+        groups: {
+          include: {
+            group: true,
+          },
+        },
+        advisor: true,
+      },
     });
 
     // Log the action

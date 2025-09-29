@@ -343,8 +343,7 @@ export function AdvisorContactButton({
   const { data: session } = useSession();
   const [dialogOpen, setDialogOpen] = useState(false);
   
-  const userGroups = (session?.user as any)?.groups || [];
-  const isClient = !userGroups.includes("Free Users") && userGroups.length > 0;
+  const advisor = (session?.user as any)?.advisor;
 
   return (
     <>
@@ -355,8 +354,7 @@ export function AdvisorContactButton({
         className={cn(className)}
       >
         <MessageSquare className="mr-2 h-4 w-4" />
-        Speak to Advisor
-        {!isClient && <ClientOnlyBadge />}
+        {advisor ? `Speak with ${advisor.firstName}` : "Speak to Advisor"}
       </Button>
       
       <AdvisorContactDialog 

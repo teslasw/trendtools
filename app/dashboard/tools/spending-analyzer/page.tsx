@@ -411,69 +411,41 @@ export default function SpendingAnalyzerPage() {
 
         {/* Advisor Help Card - Show when transactions are analyzed */}
         {transactions.length > 0 && (
-          <Card className="relative overflow-hidden border-2 border-emerald-400/50 shadow-2xl bg-gradient-to-br from-emerald-50 via-teal-50/80 to-cyan-50 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-cyan-950/40">
-            {/* Morphing gradient background */}
-            <div 
-              className="absolute inset-0 animate-gradient-morph opacity-30"
-              style={{
-                background: `linear-gradient(135deg, 
-                  rgba(16, 185, 129, 0.3) 0%, 
-                  rgba(20, 184, 166, 0.2) 25%, 
-                  rgba(6, 182, 212, 0.3) 50%, 
-                  rgba(20, 184, 166, 0.2) 75%, 
-                  rgba(16, 185, 129, 0.3) 100%)`,
-                backgroundSize: '200% 200%'
-              }}
-            />
-            
-            {/* Secondary morphing layer */}
-            <div 
-              className="absolute inset-0 animate-gradient-morph opacity-20"
-              style={{
-                background: `radial-gradient(circle at 30% 50%, 
-                  rgba(52, 211, 153, 0.4) 0%, 
-                  transparent 50%)`,
-                backgroundSize: '200% 200%',
-                animationDelay: '-5s',
-                animationDuration: '20s'
-              }}
-            />
-            
-            {/* Soft glow spots */}
-            <div className="absolute top-10 right-20 w-40 h-40 bg-emerald-400/30 rounded-full blur-3xl" />
-            <div className="absolute bottom-10 left-20 w-48 h-48 bg-teal-400/30 rounded-full blur-3xl" />
+          <Card className="relative overflow-hidden border-2 border-sky-200 shadow-2xl bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-950/20 dark:to-blue-950/20">
+            {/* Subtle overlay gradient for depth */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-sky-100/30 to-blue-100/40 dark:via-sky-900/10 dark:to-blue-900/10" />
             
             <CardContent className="relative p-8">
               <div className="flex items-center justify-between gap-6">
                 <div className="flex-1 space-y-3">
                   <div className="flex items-center gap-2">
                     <div className="flex -space-x-2">
-                      <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xs font-bold">SA</div>
-                      <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center text-white text-xs font-bold">MC</div>
+                      <div className="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">SA</div>
+                      <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">MC</div>
                     </div>
-                    <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">
+                    <Badge className="bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300 border-sky-200 dark:border-sky-700">
                       Expert Advisors Available
                     </Badge>
                   </div>
                   
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                  <h3 className="cta-title-lg">
                     We found ${Math.round(transactions.reduce((sum, t) => sum + Math.abs(t.amount), 0) * 0.15)}/month in potential savings!
                   </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
                     Our certified advisors can help you optimize your spending, create a budget that works, and achieve your financial goals faster.
                   </p>
                   
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2">
+                  <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400 pt-2">
                     <div className="flex items-center gap-1">
-                      <CheckCircle className="h-3 w-3 text-emerald-500" />
+                      <CheckCircle className="h-3 w-3 text-sky-500" />
                       <span>Free consultation</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Clock className="h-3 w-3 text-emerald-500" />
+                      <Clock className="h-3 w-3 text-sky-500" />
                       <span>15-min response</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Star className="h-3 w-3 text-emerald-500" />
+                      <Star className="h-3 w-3 text-sky-500" />
                       <span>4.9/5 rating</span>
                     </div>
                   </div>
@@ -484,9 +456,8 @@ export default function SpendingAnalyzerPage() {
                     context="Spending Analyzer - Analysis" 
                     variant="default"
                     size="lg"
-                    className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white border-0 shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
-                  />
-                  <span className="text-xs text-muted-foreground">No obligation</span>
+                                      />
+                  <span className="text-xs text-gray-500 dark:text-gray-400">No obligation</span>
                 </div>
               </div>
             </CardContent>
@@ -614,69 +585,41 @@ export default function SpendingAnalyzerPage() {
       </div>
 
       {/* Advisor Help Card */}
-      <Card className="relative overflow-hidden border-2 border-emerald-400/50 shadow-2xl bg-gradient-to-br from-emerald-50 via-teal-50/80 to-cyan-50 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-cyan-950/40 mb-6">
-        {/* Morphing gradient background */}
-        <div 
-          className="absolute inset-0 animate-gradient-morph opacity-30"
-          style={{
-            background: `linear-gradient(135deg, 
-              rgba(16, 185, 129, 0.3) 0%, 
-              rgba(20, 184, 166, 0.2) 25%, 
-              rgba(6, 182, 212, 0.3) 50%, 
-              rgba(20, 184, 166, 0.2) 75%, 
-              rgba(16, 185, 129, 0.3) 100%)`,
-            backgroundSize: '200% 200%'
-          }}
-        />
-        
-        {/* Secondary morphing layer */}
-        <div 
-          className="absolute inset-0 animate-gradient-morph opacity-20"
-          style={{
-            background: `radial-gradient(circle at 30% 50%, 
-              rgba(52, 211, 153, 0.4) 0%, 
-              transparent 50%)`,
-            backgroundSize: '200% 200%',
-            animationDelay: '-5s',
-            animationDuration: '20s'
-          }}
-        />
-        
-        {/* Soft glow spots */}
-        <div className="absolute top-10 right-20 w-40 h-40 bg-emerald-400/30 rounded-full blur-3xl" />
-        <div className="absolute bottom-10 left-20 w-48 h-48 bg-teal-400/30 rounded-full blur-3xl" />
+      <Card className="relative overflow-hidden border-2 border-sky-200 shadow-2xl bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-950/20 dark:to-blue-950/20 mb-6">
+        {/* Subtle overlay gradient for depth */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-sky-100/30 to-blue-100/40 dark:via-sky-900/10 dark:to-blue-900/10" />
         
         <CardContent className="relative p-8">
           <div className="flex items-center justify-between gap-6">
             <div className="flex-1 space-y-3">
               <div className="flex items-center gap-2">
                 <div className="flex -space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xs font-bold">SA</div>
-                  <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center text-white text-xs font-bold">MC</div>
+                  <div className="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">SA</div>
+                  <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">MC</div>
                 </div>
-                <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">
+                <Badge className="bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300 border-sky-200 dark:border-sky-700">
                   Expert Advisors Available
                 </Badge>
               </div>
               
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+              <h3 className="cta-title-lg">
                 Start your financial transformation today
               </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
+              <p className="text-sm text-gray-700 dark:text-gray-300">
                 Get personalized guidance from certified financial advisors who can help you budget, save, invest, and achieve your financial goals.
               </p>
               
-              <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2">
+              <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400 pt-2">
                 <div className="flex items-center gap-1">
-                  <CheckCircle className="h-3 w-3 text-emerald-500" />
+                  <CheckCircle className="h-3 w-3 text-sky-500" />
                   <span>Free consultation</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Clock className="h-3 w-3 text-emerald-500" />
+                  <Clock className="h-3 w-3 text-sky-500" />
                   <span>15-min response</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Star className="h-3 w-3 text-emerald-500" />
+                  <Star className="h-3 w-3 text-sky-500" />
                   <span>4.9/5 rating</span>
                 </div>
               </div>
@@ -687,9 +630,8 @@ export default function SpendingAnalyzerPage() {
                 context="Spending Analyzer - Welcome" 
                 variant="default"
                 size="lg"
-                className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white border-0 shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
-              />
-              <span className="text-xs text-muted-foreground">No obligation</span>
+                              />
+              <span className="text-xs text-gray-500 dark:text-gray-400">No obligation</span>
             </div>
           </div>
         </CardContent>
