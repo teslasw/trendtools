@@ -1,0 +1,68 @@
+// Add these models to your schema.prisma file
+
+model BankConnection {
+  id                String   @id @default(cuid())
+  userId            String
+  basiqUserId       String   // Basiq user ID
+  basiqConnectionId String   // Basiq connection ID
+  institutionId     String
+  institutionName   String
+  status            String   @default("pending") // pending, active, failed, disconnected
+  lastSyncedAt      DateTime?
+  consentExpiresAt  DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accounts          BankAccount[]
+
+  @@index([userId])
+  @@index([basiqUserId])
+}
+
+model BankAccount {
+  id                String   @id @default(cuid())
+  connectionId      String
+  basiqAccountId    String   @unique
+  accountNumber     String   // Last 4 digits only for security
+  accountName       String
+  accountType       String   // savings, transaction, credit
+  balance           Float?
+  availableBalance  Float?
+  currency          String   @default("AUD")
+  institution       String
+  lastUpdated       DateTime?
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  connection        BankConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  transactions      BankTransaction[]
+
+  @@index([connectionId])
+  @@index([basiqAccountId])
+}
+
+model BankTransaction {
+  id                String   @id @default(cuid())
+  accountId         String
+  basiqTransactionId String  @unique
+  description       String
+  amount            Float
+  balance           Float?
+  transactionDate   DateTime
+  postDate          DateTime?
+  category          String?
+  subCategory       String?
+  merchantName      String?
+  direction         String   // credit, debit
+  status            String   // pending, posted
+  rawData           Json?    // Store original Basiq data
+  createdAt         DateTime @default(now())
+
+  account           BankAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@index([transactionDate])
+  @@index([basiqTransactionId])
+}
