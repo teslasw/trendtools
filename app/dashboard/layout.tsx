@@ -81,7 +81,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <div className="fixed top-0 left-0 right-0 z-40 header-shadow">
         {/* Header bar */} 
         <header className="w-full header-bg backdrop-blur-md">
-          <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="max-w-7xl mx-auto px-10 py-4">
           <div className="flex items-center justify-between">
           {/* Logo and menu button */}
           <div className="flex items-center space-x-4">

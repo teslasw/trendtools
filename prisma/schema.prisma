@@ -63,6 +63,7 @@ model User {
   spendingAnalyses SpendingAnalysis[]
   bankConnections BankConnection[]
   agePensionScenarios AgePensionScenario[]
+  budgets Budget[]
 }
 
 model Account {
@@ -487,4 +488,54 @@ model AgePensionCalculation {
   calculatedAt          DateTime            @default(now())
 
   @@index([scenarioId])
+}
+
+// Budget Calculator Models
+
+enum BudgetFrequency {
+  weekly
+  fortnightly
+  monthly
+  quarterly
+  annually
+}
+
+enum BudgetItemType {
+  income
+  expense
+}
+
+model Budget {
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  description  String?
+  period       String        @default("monthly") // Display period for calculations
+  isActive     Boolean       @default(true)
+  items        BudgetItem[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([userId, isActive])
+}
+
+model BudgetItem {
+  id           String          @id @default(cuid())
+  budgetId     String
+  budget       Budget          @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  type         BudgetItemType  // income or expense
+  category     String          // e.g., "Housing", "Groceries", "Salary"
+  name         String          // Specific item name
+  amount       Float
+  frequency    BudgetFrequency @default(monthly)
+  notes        String?
+  isCustom     Boolean         @default(false) // User-created vs predefined
+  sortOrder    Int             @default(0)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([budgetId])
+  @@index([budgetId, type])
 }
