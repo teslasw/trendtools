@@ -18,6 +18,7 @@ import {
   Wallet,
   Building,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function DashboardPage() {
   const { data: session } = useSession();
@@ -47,6 +48,14 @@ export default function DashboardPage() {
       href: "/dashboard/tools/budget-builder",
       color: "text-purple-500",
       bgColor: "bg-purple-500/10",
+    },
+    {
+      title: "Age Pension Calculator",
+      description: "Calculate your Age Pension entitlement and compare scenarios",
+      icon: Calculator,
+      href: "/dashboard/tools/age-pension",
+      color: "text-amber-500",
+      bgColor: "bg-amber-500/10",
     },
   ];
 
@@ -118,7 +127,7 @@ export default function DashboardPage() {
       {/* Quick Actions */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-4">Trend Tools</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {quickActions.map((action) => (
             <Link key={action.title} href={action.href}>
               <Card className="glass-card border-0 cursor-pointer hover:shadow-lg transition-shadow h-full">
@@ -240,8 +249,4 @@ export default function DashboardPage() {
       </div>
     </div>
   );
-}
-
-function cn(...classes: (string | boolean | undefined)[]) {
-  return classes.filter(Boolean).join(" ");
 }

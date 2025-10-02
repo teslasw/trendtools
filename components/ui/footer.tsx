@@ -126,6 +126,27 @@ export function Footer() {
 
         {/* Legal Information */}
         <div className="pt-8 border-t border-gray-200 dark:border-gray-700 space-y-4">
+          <div className="glass-card border-0 p-5 relative overflow-hidden mb-6">
+            {/* Subtle accent gradient */}
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 via-transparent to-orange-500/5 pointer-events-none" />
+
+            <div className="relative">
+              <div className="flex items-start gap-3 mb-3">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-500/10 dark:bg-amber-500/20 flex items-center justify-center mt-0.5">
+                  <svg className="w-4 h-4 text-amber-600 dark:text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Important Notice</h4>
+                  <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
+                    The calculators, tools, and information provided on this platform are for general information purposes only and do not constitute personal financial advice. These tools are designed to provide general guidance and estimates based on the information you provide. They do not take into account your personal objectives, financial situation, or needs. Before making any financial decisions, you should consider whether the information is appropriate for your circumstances and seek advice from a licensed financial advisor. If you are not currently working with a Trend Advisory advisor, we strongly recommend speaking with one of our qualified professionals who can provide tailored advice specific to your situation.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
             Trend Advisory Pty Ltd ACN 680 920 987 is a Corporate Authorised Representative CAR# 1312087 of Trend Investor Services Proprietary Limited TA Trend Capital Group ACN 061 768 670 | AFSL #255475{" "}
             <Link href="/financial-services-guide" className="underline hover:text-gray-700 dark:hover:text-gray-300">
@@ -133,7 +154,7 @@ export function Footer() {
             </Link>
             . Trend Advisory is also a Credit Representative #563488 on behalf of Credit Partners Australia, Australian Credit License #497229
           </p>
-          
+
           <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
             Trend Advisory does not provide legal or tax advice. As a credit representative, we are authorised to provide credit assistance; however, we do not hold an Australian Credit License directly. Any referrals to third-party tax accountants or legal professionals are made solely for your convenience. We do not endorse, guarantee, or take responsibility for the services or products provided by these third parties. You are encouraged to seek independent legal and tax advice before making any decisions.
           </p>

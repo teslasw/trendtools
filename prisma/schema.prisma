@@ -62,6 +62,7 @@ model User {
   toolAccess      UserToolAccess[]
   spendingAnalyses SpendingAnalysis[]
   bankConnections BankConnection[]
+  agePensionScenarios AgePensionScenario[]
 }
 
 model Account {
@@ -366,4 +367,124 @@ model BankTransaction {
   @@index([accountId])
   @@index([transactionDate])
   @@index([basiqTransactionId])
+}
+
+// Age Pension Calculator Models
+
+enum RelationshipStatus {
+  single
+  couple
+}
+
+enum AssetCategory {
+  cash
+  term_deposit
+  shares
+  managed_funds
+  crypto
+  super_accumulation
+  super_pension
+  vehicle
+  contents
+  investment_property
+  business
+  other
+}
+
+enum IncomeCategory {
+  employment
+  self_employment
+  rental
+  overseas_pension
+  distribution
+  other
+}
+
+enum AssetOwner {
+  self
+  partner
+  joint
+}
+
+model AgePensionScenario {
+  id                String             @id @default(cuid())
+  userId            String
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name              String
+  dateOfBirth       DateTime
+  partnerDOB        DateTime?
+  relationshipStatus RelationshipStatus
+  isHomeowner       Boolean
+  residencyYears    Int
+  assets            AgePensionAsset[]
+  incomes           AgePensionIncome[]
+  calculations      AgePensionCalculation[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([userId])
+}
+
+model AgePensionAsset {
+  id           String            @id @default(cuid())
+  scenarioId   String
+  scenario     AgePensionScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  category     AssetCategory
+  owner        AssetOwner
+  description  String?
+  amount       Float
+  isExempt     Boolean           @default(false)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([scenarioId])
+}
+
+model AgePensionIncome {
+  id           String            @id @default(cuid())
+  scenarioId   String
+  scenario     AgePensionScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  category     IncomeCategory
+  owner        AssetOwner
+  description  String?
+  amount       Float             // Annual amount
+  frequency    String            @default("annual") // annual, fortnightly, weekly
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([scenarioId])
+}
+
+model AgePensionCalculation {
+  id                    String              @id @default(cuid())
+  scenarioId            String
+  scenario              AgePensionScenario  @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  
+  // Input snapshot
+  totalAssets           Float
+  totalIncome           Float               // Fortnightly
+  assessableAssets      Float
+  assessableIncome      Float               // Fortnightly
+  
+  // Test results
+  incomeTestResult      Float               // Fortnightly pension
+  assetsTestResult      Float               // Fortnightly pension
+  
+  // Final result
+  pensionAmount         Float               // Fortnightly
+  bindingTest           String              // "income" or "assets"
+  
+  // Breakdown details (JSON)
+  breakdown             Json?               // Detailed calculation breakdown
+  
+  // Rates used (for historical tracking)
+  maxRate               Float
+  incomeThreshold       Float
+  assetThreshold        Float
+  incomeTaper           Float
+  assetTaper            Float
+  
+  calculatedAt          DateTime            @default(now())
+
+  @@index([scenarioId])
 }

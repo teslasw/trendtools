@@ -61,6 +61,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const tools = [
     { name: "Super Calculator", href: "/dashboard/tools/super-calculator", icon: Calculator },
     { name: "Spending Analyzer", href: "/dashboard/tools/spending-analyzer", icon: Brain },
+    { name: "Age Pension", href: "/dashboard/tools/age-pension", icon: Calculator },
   ];
 
   const adminNavigation = [
