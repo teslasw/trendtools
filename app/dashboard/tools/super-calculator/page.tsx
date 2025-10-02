@@ -5,8 +5,8 @@ import { useSession } from "next-auth/react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdvisorContactButton } from "@/components/advisor-contact";
 import { Badge } from "@/components/ui/badge";
+import { FloatingLabelInput } from "@/components/ui/floating-label-input";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -166,10 +166,9 @@ export default function SuperCalculatorPage() {
               </h3>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="currentAge">Current Age</Label>
-                  <Input
-                    id="currentAge"
+                <div>
+                  <FloatingLabelInput
+                    label="Current Age"
                     type="number"
                     value={currentAge}
                     onChange={(e) => setCurrentAge(e.target.value)}
@@ -177,10 +176,9 @@ export default function SuperCalculatorPage() {
                     max="75"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="retirementAge">Retirement Age</Label>
-                  <Input
-                    id="retirementAge"
+                <div>
+                  <FloatingLabelInput
+                    label="Retirement Age"
                     type="number"
                     value={retirementAge}
                     onChange={(e) => setRetirementAge(e.target.value)}
@@ -199,10 +197,9 @@ export default function SuperCalculatorPage() {
               </h3>
 
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="currentBalance">Current Super Balance ($)</Label>
-                  <Input
-                    id="currentBalance"
+                <div>
+                  <FloatingLabelInput
+                    label="Current Super Balance ($)"
                     type="number"
                     value={currentBalance}
                     onChange={(e) => setCurrentBalance(e.target.value)}
@@ -210,11 +207,10 @@ export default function SuperCalculatorPage() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="annualSalary">Annual Salary ($)</Label>
+                <div>
                   <div className="flex gap-2">
-                    <Input
-                      id="annualSalary"
+                    <FloatingLabelInput
+                      label="Annual Salary ($)"
                       type="number"
                       value={annualSalary}
                       onChange={(e) => setAnnualSalary(e.target.value)}
@@ -281,10 +277,9 @@ export default function SuperCalculatorPage() {
               </h3>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="investmentReturn">Investment Return (%)</Label>
-                  <Input
-                    id="investmentReturn"
+                <div>
+                  <FloatingLabelInput
+                    label="Investment Return (%)"
                     type="number"
                     value={investmentReturn}
                     onChange={(e) => setInvestmentReturn(e.target.value)}
@@ -294,10 +289,9 @@ export default function SuperCalculatorPage() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="salaryIncrease">Salary Increase (%)</Label>
-                  <Input
-                    id="salaryIncrease"
+                <div>
+                  <FloatingLabelInput
+                    label="Salary Increase (%)"
                     type="number"
                     value={salaryIncrease}
                     onChange={(e) => setSalaryIncrease(e.target.value)}
@@ -307,10 +301,9 @@ export default function SuperCalculatorPage() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="inflationRate">Inflation Rate (%)</Label>
-                  <Input
-                    id="inflationRate"
+                <div>
+                  <FloatingLabelInput
+                    label="Inflation Rate (%)"
                     type="number"
                     value={inflationRate}
                     onChange={(e) => setInflationRate(e.target.value)}
@@ -320,10 +313,9 @@ export default function SuperCalculatorPage() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="fees">Fees (%)</Label>
-                  <Input
-                    id="fees"
+                <div>
+                  <FloatingLabelInput
+                    label="Fees (%)"
                     type="number"
                     value={fees}
                     onChange={(e) => setFees(e.target.value)}

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FloatingLabelInput } from "@/components/ui/floating-label-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -301,12 +302,10 @@ export default function BudgetBuilderPage() {
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div>
-                  <Label htmlFor="budget-name">Budget Name</Label>
-                  <Input
-                    id="budget-name"
+                  <FloatingLabelInput
+                    label="Budget Name"
                     value={newBudgetName}
                     onChange={(e) => setNewBudgetName(e.target.value)}
-                    placeholder="e.g., Monthly Budget 2025"
                   />
                 </div>
               </div>

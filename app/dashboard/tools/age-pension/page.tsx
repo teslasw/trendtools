@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { FloatingLabelInput } from "@/components/ui/floating-label-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -660,18 +661,15 @@ export default function AgePensionPage() {
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="name">Scenario Name</Label>
-                      <Input
-                        id="name"
+                      <FloatingLabelInput
+                        label="Scenario Name"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder="e.g., Current Situation"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="dob">Date of Birth</Label>
-                      <Input
-                        id="dob"
+                      <FloatingLabelInput
+                        label="Date of Birth"
                         type="date"
                         value={formData.dateOfBirth}
                         onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
@@ -698,9 +696,8 @@ export default function AgePensionPage() {
 
                   {formData.relationshipStatus === "couple" && (
                     <div>
-                      <Label htmlFor="partnerDob">Partner's Date of Birth</Label>
-                      <Input
-                        id="partnerDob"
+                      <FloatingLabelInput
+                        label="Partner's Date of Birth"
                         type="date"
                         value={formData.partnerDOB}
                         onChange={(e) => setFormData({ ...formData, partnerDOB: e.target.value })}
@@ -726,9 +723,8 @@ export default function AgePensionPage() {
                   </div>
 
                   <div>
-                    <Label htmlFor="residency">Years of Australian Residency</Label>
-                    <Input
-                      id="residency"
+                    <FloatingLabelInput
+                      label="Years of Australian Residency"
                       type="number"
                       value={formData.residencyYears}
                       onChange={(e) => setFormData({ ...formData, residencyYears: parseInt(e.target.value) || 0 })}
