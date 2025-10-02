@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     const user = await prisma.user.findUnique({
       where: { email },
       include: {
-        groups: {
+        userGroups: {
           include: {
             group: true,
           },
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
-        groups: user.groups.map(ug => ({
+        groups: user.userGroups.map(ug => ({
           id: ug.group.id,
           name: ug.group.name,
           riskLevel: ug.group.riskLevel,

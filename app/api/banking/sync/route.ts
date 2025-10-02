@@ -8,8 +8,18 @@ import { basiqClient } from "@/lib/basiq";
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Fetch user from database using email
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     const { connectionId, accountId } = await req.json();
@@ -21,7 +31,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    if (!connection || connection.userId !== session.user.id) {
+    if (!connection || connection.userId !== user.id) {
       return NextResponse.json(
         { error: "Connection not found" },
         { status: 404 }
@@ -72,12 +82,12 @@ export async function POST(req: NextRequest) {
               merchantName: txn.merchant?.name,
               direction: txn.direction,
               status: txn.status,
-              rawData: txn,
+              rawData: txn as any,
             },
             update: {
               balance: txn.balance,
               status: txn.status,
-              rawData: txn,
+              rawData: txn as any,
             },
           });
         }
@@ -132,12 +142,22 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Fetch user from database using email
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
     const connections = await prisma.bankConnection.findMany({
-      where: { userId: session.user.id },
+      where: { userId: user.id },
       include: {
         accounts: {
           select: {

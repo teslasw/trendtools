@@ -7,9 +7,10 @@ import { AgePensionCalculator, CalculationInput } from "@/lib/age-pension-calcul
 // POST /api/tools/age-pension/scenarios/[scenarioId]/calculate - Calculate pension
 export async function POST(
   req: NextRequest,
-  { params }: { params: { scenarioId: string } }
+  { params }: { params: Promise<{ scenarioId: string }> }
 ) {
   try {
+    const { scenarioId } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -27,7 +28,7 @@ export async function POST(
     // Get scenario with assets and incomes
     const scenario = await prisma.agePensionScenario.findFirst({
       where: {
-        id: params.scenarioId,
+        id: scenarioId,
         userId: user.id,
       },
       include: {

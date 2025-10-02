@@ -90,7 +90,7 @@ async function main() {
     },
   ];
 
-  const createdGroups = [];
+  const createdGroups: any[] = [];
   for (const group of groups) {
     const created = await prisma.group.upsert({
       where: { name: group.name },

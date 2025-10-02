@@ -20,14 +20,11 @@ export async function GET(request: NextRequest) {
         firstName: true,
         lastName: true,
         phone: true,
-        dateOfBirth: true,
-        address: true,
-        city: true,
-        state: true,
-        zipCode: true,
-        country: true,
+        image: true,
+        role: true,
+        status: true,
         createdAt: true,
-        groups: {
+        userGroups: {
           include: {
             group: {
               select: {
@@ -46,15 +43,8 @@ export async function GET(request: NextRequest) {
       return apiError("User not found", "NOT_FOUND", 404);
     }
 
-    // Get user preferences (stored as JSON in metadata)
-    const preferences = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: {
-        metadata: true,
-      },
-    });
-
-    const userPreferences = (preferences?.metadata as any)?.preferences || {
+    // TODO: Implement user preferences in a separate table
+    const userPreferences = {
       notifications: true,
       emailUpdates: true,
       twoFactor: false,
@@ -66,14 +56,11 @@ export async function GET(request: NextRequest) {
       firstName: profile.firstName,
       lastName: profile.lastName,
       phone: profile.phone,
-      dateOfBirth: profile.dateOfBirth,
-      address: profile.address,
-      city: profile.city,
-      state: profile.state,
-      zipCode: profile.zipCode,
-      country: profile.country,
+      image: profile.image,
+      role: profile.role,
+      status: profile.status,
       memberSince: profile.createdAt,
-      groups: profile.groups.map(ug => ({
+      groups: profile.userGroups.map(ug => ({
         id: ug.group.id,
         name: ug.group.name,
         description: ug.group.description,
@@ -125,13 +112,6 @@ export async function PUT(request: NextRequest) {
         ...(data.firstName && { firstName: data.firstName }),
         ...(data.lastName && { lastName: data.lastName }),
         ...(data.phone && { phone: data.phone }),
-        ...(data.dateOfBirth && { dateOfBirth: new Date(data.dateOfBirth) }),
-        ...(data.address && { address: data.address }),
-        ...(data.city && { city: data.city }),
-        ...(data.state && { state: data.state }),
-        ...(data.zipCode && { zipCode: data.zipCode }),
-        ...(data.country && { country: data.country }),
-        updatedAt: new Date(),
       },
       select: {
         id: true,
@@ -139,12 +119,9 @@ export async function PUT(request: NextRequest) {
         firstName: true,
         lastName: true,
         phone: true,
-        dateOfBirth: true,
-        address: true,
-        city: true,
-        state: true,
-        zipCode: true,
-        country: true,
+        image: true,
+        role: true,
+        status: true,
       },
     });
 

@@ -6,9 +6,10 @@ import { authOptions } from "@/lib/auth";
 // GET /api/tools/age-pension/scenarios/[scenarioId] - Get scenario details
 export async function GET(
   req: NextRequest,
-  { params }: { params: { scenarioId: string } }
+  { params }: { params: Promise<{ scenarioId: string }> }
 ) {
   try {
+    const { scenarioId } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -25,7 +26,7 @@ export async function GET(
 
     const scenario = await prisma.agePensionScenario.findFirst({
       where: {
-        id: params.scenarioId,
+        id: scenarioId,
         userId: user.id,
       },
       include: {
@@ -55,9 +56,10 @@ export async function GET(
 // PUT /api/tools/age-pension/scenarios/[scenarioId] - Update scenario
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { scenarioId: string } }
+  { params }: { params: Promise<{ scenarioId: string }> }
 ) {
   try {
+    const { scenarioId } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -75,7 +77,7 @@ export async function PUT(
     // Verify ownership
     const existingScenario = await prisma.agePensionScenario.findFirst({
       where: {
-        id: params.scenarioId,
+        id: scenarioId,
         userId: user.id,
       },
     });
@@ -85,9 +87,9 @@ export async function PUT(
     }
 
     const data = await req.json();
-    
+
     const scenario = await prisma.agePensionScenario.update({
-      where: { id: params.scenarioId },
+      where: { id: scenarioId },
       data: {
         name: data.name,
         dateOfBirth: new Date(data.dateOfBirth),
@@ -111,9 +113,10 @@ export async function PUT(
 // DELETE /api/tools/age-pension/scenarios/[scenarioId] - Delete scenario
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { scenarioId: string } }
+  { params }: { params: Promise<{ scenarioId: string }> }
 ) {
   try {
+    const { scenarioId } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -131,7 +134,7 @@ export async function DELETE(
     // Verify ownership
     const scenario = await prisma.agePensionScenario.findFirst({
       where: {
-        id: params.scenarioId,
+        id: scenarioId,
         userId: user.id,
       },
     });
@@ -141,7 +144,7 @@ export async function DELETE(
     }
 
     await prisma.agePensionScenario.delete({
-      where: { id: params.scenarioId },
+      where: { id: scenarioId },
     });
 
     return NextResponse.json({ success: true });

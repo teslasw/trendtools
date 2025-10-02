@@ -6,9 +6,10 @@ import { authOptions } from "@/lib/auth";
 // GET /api/tools/age-pension/scenarios/[scenarioId]/export - Export to PDF
 export async function GET(
   req: NextRequest,
-  { params }: { params: { scenarioId: string } }
+  { params }: { params: Promise<{ scenarioId: string }> }
 ) {
   try {
+    const { scenarioId } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -26,7 +27,7 @@ export async function GET(
     // Get scenario with all data
     const scenario = await prisma.agePensionScenario.findFirst({
       where: {
-        id: params.scenarioId,
+        id: scenarioId,
         userId: user.id,
       },
       include: {

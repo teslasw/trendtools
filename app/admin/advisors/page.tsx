@@ -474,7 +474,7 @@ export default function AdvisorsManagement() {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDeleteAdvisor(advisor.id)}
-                            disabled={advisor._count?.clients && advisor._count.clients > 0}
+                            disabled={(advisor._count?.clients ?? 0) > 0}
                           >
                             <Trash2 className="h-4 w-4 text-red-600" />
                           </Button>

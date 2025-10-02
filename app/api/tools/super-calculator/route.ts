@@ -85,23 +85,23 @@ export async function POST(request: NextRequest) {
     const annualRetirementIncome = inflationAdjustedBalance * 0.04;
     const monthlyRetirementIncome = annualRetirementIncome / 12;
 
-    // Save calculation to database for history
-    await prisma.toolUsage.create({
-      data: {
-        userId: user.id,
-        toolId: "super-calculator", // This should be the actual tool ID from the database
-        metadata: {
-          inputs: validation.data,
-          results: {
-            projectedBalance: Math.round(balance),
-            totalContributions: Math.round(totalContributions),
-            totalReturns: Math.round(totalReturns),
-            inflationAdjustedBalance: Math.round(inflationAdjustedBalance),
-            monthlyRetirementIncome: Math.round(monthlyRetirementIncome),
-          },
-        },
-      },
-    });
+    // TODO: Save calculation to database for history
+    // await prisma.toolUsage.create({
+    //   data: {
+    //     userId: user.id,
+    //     toolId: "super-calculator",
+    //     metadata: {
+    //       inputs: validation.data,
+    //       results: {
+    //         projectedBalance: Math.round(balance),
+    //         totalContributions: Math.round(totalContributions),
+    //         totalReturns: Math.round(totalReturns),
+    //         inflationAdjustedBalance: Math.round(inflationAdjustedBalance),
+    //         monthlyRetirementIncome: Math.round(monthlyRetirementIncome),
+    //       },
+    //     },
+    //   },
+    // });
 
     // Log activity
     await prisma.activityLog.create({
@@ -143,27 +143,29 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const history = await prisma.toolUsage.findMany({
-      where: {
-        userId: user.id,
-        toolId: "super-calculator",
-      },
-      orderBy: { createdAt: "desc" },
-      take: 20,
-      select: {
-        id: true,
-        createdAt: true,
-        metadata: true,
-      },
-    });
+    // TODO: Implement calculation history from toolUsage model
+    // const history = await prisma.toolUsage.findMany({
+    //   where: {
+    //     userId: user.id,
+    //     toolId: "super-calculator",
+    //   },
+    //   orderBy: { createdAt: "desc" },
+    //   take: 20,
+    //   select: {
+    //     id: true,
+    //     createdAt: true,
+    //     metadata: true,
+    //   },
+    // });
 
     return apiResponse({
-      calculations: history.map(calc => ({
-        id: calc.id,
-        createdAt: calc.createdAt,
-        inputs: (calc.metadata as any)?.inputs || {},
-        results: (calc.metadata as any)?.results || {},
-      })),
+      calculations: [],
+      // calculations: history.map(calc => ({
+      //   id: calc.id,
+      //   createdAt: calc.createdAt,
+      //   inputs: (calc.metadata as any)?.inputs || {},
+      //   results: (calc.metadata as any)?.results || {},
+      // })),
     });
   } catch (error) {
     console.error("History fetch error:", error);

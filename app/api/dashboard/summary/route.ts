@@ -18,7 +18,6 @@ export async function GET(request: NextRequest) {
         lastName: true,
         email: true,
         createdAt: true,
-        lastLogin: true,
       },
     });
 
@@ -30,7 +29,6 @@ export async function GET(request: NextRequest) {
         name: true,
         slug: true,
         description: true,
-        icon: true,
       },
     });
 
@@ -122,7 +120,6 @@ export async function GET(request: NextRequest) {
       user: {
         name: `${userData?.firstName || ""} ${userData?.lastName || ""}`.trim() || userData?.email,
         email: userData?.email,
-        lastLogin: userData?.lastLogin,
         memberSince: userData?.createdAt,
       },
       financial: financialSummary,
@@ -131,7 +128,6 @@ export async function GET(request: NextRequest) {
         name: tool.name,
         slug: tool.slug,
         description: tool.description,
-        icon: tool.icon,
         available: true,
       })),
       recentActivity: formattedActivities,

@@ -575,15 +575,12 @@ export default function SpendingAnalyzerPage() {
                 </div>
                 {!advisor && (
                   <CardContent className="pt-0">
-                    <AdvisorContactButton 
+                    <AdvisorContactButton
                       context="Bank Connection Request"
                       variant="default"
                       size="sm"
                       className="w-full"
-                    >
-                      <MessageSquare className="mr-2 h-4 w-4" />
-                      Speak with Advisor
-                    </AdvisorContactButton>
+                    />
                   </CardContent>
                 )}
               </Card>
@@ -644,16 +641,23 @@ export default function SpendingAnalyzerPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="pt-6">
-        <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-bold">Spending Analyzer</h1>
-          <Badge className="bg-gradient-to-r from-sky-500 to-blue-500 text-white border-0 px-2 py-1">
-            <Sparkles className="h-3 w-3 mr-1" />
-            Powered by AI
-          </Badge>
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md bg-emerald-500/10">
+            <Brain className="h-7 w-7 text-emerald-500" />
+          </div>
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-bold">Spending Analyzer</h1>
+              <Badge className="bg-gradient-to-r from-sky-500 to-blue-500 text-white border-0 px-2 py-1">
+                <Sparkles className="h-3 w-3 mr-1" />
+                Powered by AI
+              </Badge>
+            </div>
+            <p className="text-muted-foreground mt-2">
+              Upload your bank statements to get AI-powered spending insights
+            </p>
+          </div>
         </div>
-        <p className="text-muted-foreground mt-2">
-          Upload your bank statements to get AI-powered spending insights
-        </p>
       </div>
 
       {/* Advisor Help Card */}

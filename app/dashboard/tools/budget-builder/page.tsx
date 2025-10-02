@@ -55,6 +55,7 @@ interface Budget {
   name: string;
   description?: string;
   period: string;
+  isActive?: boolean;
   items: BudgetItem[];
 }
 
@@ -272,11 +273,16 @@ export default function BudgetBuilderPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center pt-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight font-manrope">Budget Builder</h1>
-          <p className="text-muted-foreground mt-1">
-            Create and manage your personal budget
-          </p>
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md bg-purple-500/10">
+            <PiggyBank className="h-7 w-7 text-purple-500" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight font-manrope">Budget Builder</h1>
+            <p className="text-muted-foreground mt-1">
+              Create and manage your personal budget
+            </p>
+          </div>
         </div>
         <div className="flex gap-2">
           <Dialog open={showNewBudgetDialog} onOpenChange={setShowNewBudgetDialog}>

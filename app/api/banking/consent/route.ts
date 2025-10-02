@@ -8,17 +8,21 @@ import { basiqClient } from "@/lib/basiq";
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = session.user.id;
-    
-    // Check if user has an advisor (required for bank connections)
+    // Fetch user from database using email
     const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { advisorId: true, email: true },
+      where: { email: session.user.email },
+      select: { id: true, advisorId: true, email: true },
     });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const userId = user.id;
 
     if (!user?.advisorId) {
       return NextResponse.json(
@@ -89,8 +93,18 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Fetch user from database using email
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     const connectionId = req.nextUrl.searchParams.get("connectionId");
@@ -117,7 +131,7 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    if (!connection || connection.userId !== session.user.id) {
+    if (!connection || connection.userId !== user.id) {
       return NextResponse.json(
         { error: "Connection not found" },
         { status: 404 }

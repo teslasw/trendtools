@@ -517,11 +517,16 @@ export default function AgePensionPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center pt-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight font-manrope">Age Pension Calculator</h1>
-          <p className="text-muted-foreground mt-1">
-            Calculate your Age Pension entitlement and compare scenarios
-          </p>
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md bg-amber-500/10">
+            <Calculator className="h-7 w-7 text-amber-500" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight font-manrope">Age Pension Calculator</h1>
+            <p className="text-muted-foreground mt-1">
+              Calculate your Age Pension entitlement and compare scenarios
+            </p>
+          </div>
         </div>
         <div className="flex gap-2">
           <Link href="/dashboard/tools/age-pension/compare">

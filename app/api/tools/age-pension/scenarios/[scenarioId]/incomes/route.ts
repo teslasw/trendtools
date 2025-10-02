@@ -6,9 +6,10 @@ import { authOptions } from "@/lib/auth";
 // GET /api/tools/age-pension/scenarios/[scenarioId]/incomes - List incomes
 export async function GET(
   req: NextRequest,
-  { params }: { params: { scenarioId: string } }
+  { params }: { params: Promise<{ scenarioId: string }> }
 ) {
   try {
+    const { scenarioId } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -26,7 +27,7 @@ export async function GET(
     // Verify ownership
     const scenario = await prisma.agePensionScenario.findFirst({
       where: {
-        id: params.scenarioId,
+        id: scenarioId,
         userId: user.id,
       },
     });
@@ -36,7 +37,7 @@ export async function GET(
     }
 
     const incomes = await prisma.agePensionIncome.findMany({
-      where: { scenarioId: params.scenarioId },
+      where: { scenarioId: scenarioId },
       orderBy: { createdAt: 'asc' },
     });
 
@@ -53,9 +54,10 @@ export async function GET(
 // POST /api/tools/age-pension/scenarios/[scenarioId]/incomes - Add income
 export async function POST(
   req: NextRequest,
-  { params }: { params: { scenarioId: string } }
+  { params }: { params: Promise<{ scenarioId: string }> }
 ) {
   try {
+    const { scenarioId } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -73,7 +75,7 @@ export async function POST(
     // Verify ownership
     const scenario = await prisma.agePensionScenario.findFirst({
       where: {
-        id: params.scenarioId,
+        id: scenarioId,
         userId: user.id,
       },
     });
@@ -83,10 +85,10 @@ export async function POST(
     }
 
     const data = await req.json();
-    
+
     const income = await prisma.agePensionIncome.create({
       data: {
-        scenarioId: params.scenarioId,
+        scenarioId: scenarioId,
         category: data.category,
         owner: data.owner,
         description: data.description,
@@ -108,9 +110,10 @@ export async function POST(
 // PUT /api/tools/age-pension/scenarios/[scenarioId]/incomes/[incomeId] - Update income
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { scenarioId: string; incomeId: string } }
+  { params }: { params: Promise<{ scenarioId: string; incomeId: string }> }
 ) {
   try {
+    const { scenarioId, incomeId } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -128,7 +131,7 @@ export async function PUT(
     // Verify ownership through scenario
     const scenario = await prisma.agePensionScenario.findFirst({
       where: {
-        id: params.scenarioId,
+        id: scenarioId,
         userId: user.id,
       },
     });
@@ -138,9 +141,9 @@ export async function PUT(
     }
 
     const data = await req.json();
-    
+
     const income = await prisma.agePensionIncome.update({
-      where: { id: params.incomeId },
+      where: { id: incomeId },
       data: {
         category: data.category,
         owner: data.owner,
@@ -163,9 +166,10 @@ export async function PUT(
 // DELETE /api/tools/age-pension/scenarios/[scenarioId]/incomes/[incomeId] - Delete income
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { scenarioId: string; incomeId: string } }
+  { params }: { params: Promise<{ scenarioId: string; incomeId: string }> }
 ) {
   try {
+    const { scenarioId, incomeId } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -183,7 +187,7 @@ export async function DELETE(
     // Verify ownership through scenario
     const scenario = await prisma.agePensionScenario.findFirst({
       where: {
-        id: params.scenarioId,
+        id: scenarioId,
         userId: user.id,
       },
     });
@@ -193,7 +197,7 @@ export async function DELETE(
     }
 
     await prisma.agePensionIncome.delete({
-      where: { id: params.incomeId },
+      where: { id: incomeId },
     });
 
     return NextResponse.json({ success: true });
