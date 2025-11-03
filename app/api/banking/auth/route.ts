@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     // Check if user has an advisor (required for bank connections)
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
-      select: { id: true, advisorId: true, email: true },
+      select: { id: true, advisorId: true, email: true, phone: true },
     });
 
     if (!user) {
@@ -40,9 +40,10 @@ export async function POST(req: NextRequest) {
     let basiqUserId = bankConnection?.basiqUserId;
 
     if (!basiqUserId) {
-      // Create new Basiq user
+      // Create new Basiq user with phone number (required for auth_link)
       basiqUserId = await basiqClient.createUser(
-        user.email || `user_${userId}@trendadvisory.com`
+        user.email || `user_${userId}@trendadvisory.com`,
+        user.phone || undefined
       );
 
       // Store the Basiq user ID

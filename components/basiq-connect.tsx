@@ -11,11 +11,11 @@ interface BasiqConnectProps {
   className?: string;
 }
 
-export function BasiqConnect({ 
-  onSuccess, 
-  onError, 
+export function BasiqConnect({
+  onSuccess,
+  onError,
   disabled = false,
-  className = "" 
+  className = ""
 }: BasiqConnectProps) {
   const [connecting, setConnecting] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -25,25 +25,32 @@ export function BasiqConnect({
     setStatus("Initializing connection...");
 
     try {
-      // Get consent URL from our backend
+      // Get auth link from our backend
       const authResponse = await fetch("/api/banking/auth", {
         method: "POST",
       });
 
       if (!authResponse.ok) {
-        throw new Error("Failed to get authorization");
+        const errorData = await authResponse.json();
+        throw new Error(errorData.error || "Failed to get authorization");
       }
 
-      const { consentUrl, userId, connectionId } = await authResponse.json();
+      const { consentUrl, userId: basiqUserId, connectionId } = await authResponse.json();
 
-      // Open Basiq consent in a popup window
-      const consentWindow = window.open(
+      setStatus("Opening bank connection...");
+
+      // Open Basiq auth link in a popup window
+      const authWindow = window.open(
         consentUrl,
-        "basiq-consent",
-        "width=600,height=700,left=200,top=100"
+        "basiq-auth",
+        "width=500,height=800,left=200,top=100"
       );
 
-      setStatus("Please complete bank authorization in the popup window...");
+      if (!authWindow) {
+        throw new Error("Please allow popups for this site");
+      }
+
+      setStatus("Complete the bank connection in the popup...");
 
       // Poll for connection status
       const pollInterval = setInterval(async () => {
@@ -53,23 +60,30 @@ export function BasiqConnect({
           );
 
           if (statusResponse.ok) {
-            const status = await statusResponse.json();
+            const statusData = await statusResponse.json();
 
-            if (status.status === "active" && status.accounts.length > 0) {
+            if (statusData.status === "active" && statusData.accounts.length > 0) {
               clearInterval(pollInterval);
-              if (consentWindow && !consentWindow.closed) {
-                consentWindow.close();
+              if (authWindow && !authWindow.closed) {
+                authWindow.close();
               }
 
               setStatus("Connection successful! Syncing accounts...");
-              setConnecting(false);
-
-              if (onSuccess) {
-                onSuccess(userId, connectionId);
-              }
 
               // Sync the connected accounts
               await syncAccounts(connectionId);
+
+              if (onSuccess) {
+                onSuccess(basiqUserId, connectionId);
+              }
+
+              setStatus("All done!");
+              setTimeout(() => {
+                setStatus(null);
+                window.location.reload();
+              }, 2000);
+
+              setConnecting(false);
             }
           }
         } catch (error) {
@@ -77,7 +91,7 @@ export function BasiqConnect({
         }
 
         // Stop polling if window is closed
-        if (consentWindow && consentWindow.closed) {
+        if (authWindow && authWindow.closed) {
           clearInterval(pollInterval);
           setStatus("Connection cancelled");
           setConnecting(false);
@@ -85,7 +99,7 @@ export function BasiqConnect({
         }
       }, 3000); // Poll every 3 seconds
 
-      // Stop polling after 5 minutes
+      // Stop polling after 10 minutes
       setTimeout(() => {
         clearInterval(pollInterval);
         if (connecting) {
@@ -93,44 +107,40 @@ export function BasiqConnect({
           setConnecting(false);
           setTimeout(() => setStatus(null), 3000);
         }
-      }, 300000);
+      }, 600000);
+
     } catch (error) {
       console.error("Error initializing Basiq Connect:", error);
       setStatus(error instanceof Error ? error.message : "Failed to connect");
       setConnecting(false);
-      
+
       if (onError) {
         onError(error instanceof Error ? error.message : "Failed to connect");
       }
-      
+
       setTimeout(() => setStatus(null), 5000);
     }
   };
 
-  const syncAccounts = async (connectionId: string) => {
+  const syncAccounts = async (cid: string) => {
     try {
       const response = await fetch("/api/banking/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ connectionId }),
+        body: JSON.stringify({ connectionId: cid }),
       });
 
       if (response.ok) {
         const result = await response.json();
         setStatus(`Connected! Synced ${result.totalTransactionsSynced} transactions`);
-        
-        setTimeout(() => {
-          setStatus(null);
-          // Optionally reload to show new data
-          window.location.reload();
-        }, 3000);
+      } else {
+        throw new Error("Failed to sync");
       }
     } catch (error) {
       console.error("Error syncing accounts:", error);
+      throw error;
     }
   };
-
-  // No need to load external script anymore
 
   return (
     <div className={`space-y-2 ${className}`}>
@@ -153,10 +163,10 @@ export function BasiqConnect({
           </>
         )}
       </Button>
-      
+
       {status && (
         <div className="flex items-center justify-center gap-2 text-xs">
-          {status.includes("successful") ? (
+          {status.includes("successful") || status.includes("done") ? (
             <CheckCircle className="h-3 w-3 text-emerald-500" />
           ) : status.includes("failed") || status.includes("cancelled") ? (
             <XCircle className="h-3 w-3 text-destructive" />
@@ -169,4 +179,3 @@ export function BasiqConnect({
     </div>
   );
 }
-

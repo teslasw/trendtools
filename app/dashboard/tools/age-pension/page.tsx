@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calculator, Plus, Trash2, Copy, ChevronRight, AlertCircle, DollarSign, Home, Briefcase, GitCompareArrows, Gift, Sparkles, Download, Save } from "lucide-react";
+import { Calculator, Plus, Trash2, Copy, ChevronRight, AlertCircle, DollarSign, Home, Briefcase, GitCompareArrows, Gift, Sparkles, Download, Save, User } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -546,40 +546,129 @@ export default function AgePensionPage() {
         </div>
       </div>
 
-      {/* Scenario selector */}
+      {/* Compact Scenario Selector */}
       {scenarios.length > 0 && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Your Scenarios</CardTitle>
-            <CardDescription>Select a scenario to view or edit</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {scenarios.map(scenario => (
-                <button
-                  key={scenario.id}
-                  onClick={() => loadScenario(scenario.id)}
-                  className={`p-4 rounded-lg border text-left transition-colors ${
-                    activeScenario?.id === scenario.id
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/50"
-                  }`}
-                >
-                  <div className="font-semibold">{scenario.name}</div>
-                  <div className="text-sm text-muted-foreground mt-1">
-                    {scenario.relationshipStatus === "couple" ? "Couple" : "Single"} • 
-                    {scenario.isHomeowner ? " Homeowner" : " Non-homeowner"}
-                  </div>
-                  {scenario.calculations && scenario.calculations[0] && (
-                    <div className="text-sm font-semibold text-primary mt-2">
-                      {formatCurrency(scenario.calculations[0].pensionAmount)} p/f
+        <div className="mb-6 flex items-center gap-3">
+          <Select
+            value={activeScenario?.id || ""}
+            onValueChange={(value) => loadScenario(value)}
+          >
+            <SelectTrigger className="flex-1 h-12 glass-card border-2">
+              <SelectValue placeholder="Select a scenario">
+                {activeScenario && (
+                  <div className="flex items-center justify-between w-full pr-2">
+                    <div>
+                      <div className="font-semibold text-[#2285c5]">{activeScenario.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {activeScenario.relationshipStatus === "couple" ? "Couple" : "Single"} •
+                        {activeScenario.isHomeowner ? " Homeowner" : " Non-homeowner"}
+                      </div>
                     </div>
-                  )}
-                </button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                    {activeScenario.calculations?.[0] && (
+                      <div className="justify-end">
+                        <div className="font-bold text-[#2285c5]">
+                          {formatCurrency(activeScenario.calculations[0].pensionAmount)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">p/f</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent
+              className="w-[var(--radix-select-trigger-width)] max-h-[400px] animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=closed]:slide-out-to-top-2"
+              align="start"
+              sideOffset={8}
+            >
+              {scenarios.map((scenario) => {
+                const calculation = scenario.calculations?.[0];
+                return (
+                  <SelectItem key={scenario.id} value={scenario.id} className="h-auto py-3">
+                    <div className="relative w-full pr-32">
+                      <div className="font-semibold mb-1">{scenario.name}</div>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <User className="w-3 h-3" />
+                          {scenario.relationshipStatus === "couple" ? "Couple" : "Single"}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Home className="w-3 h-3" />
+                          {scenario.isHomeowner ? "Owner" : "Renter"}
+                        </span>
+                        {calculation && (
+                          <>
+                            <span className="flex items-center gap-1">
+                              <DollarSign className="w-3 h-3" />
+                              {formatCurrency(calculation.totalAssets)}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      {calculation && (
+                        <div className="absolute right-0 top-1/2 -translate-y-1/2 text-right">
+                          <div className="font-bold text-[#2285c5]">
+                            {formatCurrency(calculation.pensionAmount)}
+                          </div>
+                          <div className="text-xs text-muted-foreground">per fortnight</div>
+                        </div>
+                      )}
+                    </div>
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setActiveScenario(null);
+                setFormData({
+                  name: "",
+                  dateOfBirth: "",
+                  relationshipStatus: "single",
+                  partnerDOB: "",
+                  isHomeowner: true,
+                  residencyYears: 10,
+                  assets: [],
+                  incomes: [],
+                });
+                setAssets([]);
+                setIncomes([]);
+              }}
+              className="h-12 glass-card"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              New
+            </Button>
+
+            {activeScenario && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => duplicateScenario(activeScenario.id)}
+                  className="h-12 glass-card"
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Duplicate
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => deleteScenario(activeScenario.id)}
+                  className="h-12 glass-card hover:bg-destructive/10 hover:text-destructive hover:border-destructive"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
       )}
 
       {/* What-If Strategy Chips */}
@@ -668,8 +757,9 @@ export default function AgePensionPage() {
                       />
                     </div>
                     <div>
-                      <FloatingLabelInput
-                        label="Date of Birth"
+                      <Label htmlFor="dob">Date of Birth</Label>
+                      <Input
+                        id="dob"
                         type="date"
                         value={formData.dateOfBirth}
                         onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
@@ -795,20 +885,18 @@ export default function AgePensionPage() {
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label>Description (optional)</Label>
-                          <Input
+                          <FloatingLabelInput
+                            label="Description (optional)"
                             value={asset.description || ""}
                             onChange={(e) => updateAsset(index, "description", e.target.value)}
-                            placeholder="e.g., NAB Savings"
                           />
                         </div>
                         <div>
-                          <Label>Amount</Label>
-                          <Input
+                          <FloatingLabelInput
+                            label="Amount"
                             type="number"
                             value={asset.amount}
                             onChange={(e) => updateAsset(index, "amount", parseFloat(e.target.value) || 0)}
-                            placeholder="0.00"
                           />
                         </div>
                       </div>
@@ -894,20 +982,18 @@ export default function AgePensionPage() {
                       </div>
                       <div className="grid grid-cols-3 gap-4">
                         <div>
-                          <Label>Description (optional)</Label>
-                          <Input
+                          <FloatingLabelInput
+                            label="Description (optional)"
                             value={income.description || ""}
                             onChange={(e) => updateIncome(index, "description", e.target.value)}
-                            placeholder="e.g., Part-time work"
                           />
                         </div>
                         <div>
-                          <Label>Amount</Label>
-                          <Input
+                          <FloatingLabelInput
+                            label="Amount"
                             type="number"
                             value={income.amount}
                             onChange={(e) => updateIncome(index, "amount", parseFloat(e.target.value) || 0)}
-                            placeholder="0.00"
                           />
                         </div>
                         <div>

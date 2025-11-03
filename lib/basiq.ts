@@ -89,9 +89,18 @@ class BasiqClient {
     return this.token;
   }
 
-  async createUser(email: string): Promise<string> {
+  async createUser(email: string, mobile?: string): Promise<string> {
     const token = await this.getAccessToken();
-    
+
+    const requestBody: any = {
+      email: email,
+    };
+
+    // Add mobile if provided - required for auth_link
+    if (mobile) {
+      requestBody.mobile = mobile;
+    }
+
     const response = await fetch(`${BASIQ_API_URL}/users`, {
       method: "POST",
       headers: {
@@ -99,9 +108,7 @@ class BasiqClient {
         "Content-Type": "application/json",
         "basiq-version": "3.0",
       },
-      body: JSON.stringify({
-        email: email,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -112,37 +119,50 @@ class BasiqClient {
     return data.id;
   }
 
-  async createConsent(
-    userId: string, 
-    basiqUserId: string,
-    purpose: string = "Spending analysis and financial insights"
-  ): Promise<BasiqConsentResponse> {
+  async createAuthLink(basiqUserId: string, mobile?: string): Promise<BasiqConsentResponse> {
     const token = await this.getAccessToken();
-    
-    const response = await fetch(`${BASIQ_API_URL}/users/${basiqUserId}/consents`, {
+
+    // Request body is optional - only include mobile if provided
+    const requestBody: any = {};
+    if (mobile) {
+      requestBody.mobile = mobile;
+    }
+
+    const response = await fetch(`${BASIQ_API_URL}/users/${basiqUserId}/auth_link`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${token}`,
         "Content-Type": "application/json",
         "basiq-version": "3.0",
       },
-      body: JSON.stringify({
-        type: "cdr",
-        scopes: ["ACCOUNTS", "TRANSACTIONS"],
-        title: "Trend Advisory Financial Analysis",
-        purposes: {
-          primary: purpose,
-        },
-        duration: 365, // 365 days
-      }),
+      body: Object.keys(requestBody).length > 0 ? JSON.stringify(requestBody) : JSON.stringify({}),
     });
 
     if (!response.ok) {
       const error = await response.text();
-      throw new Error(`Failed to create consent: ${error}`);
+      throw new Error(`Failed to create auth link: ${error}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+
+    return {
+      id: data.id || basiqUserId,
+      userId: basiqUserId,
+      created: data.created || new Date().toISOString(),
+      updated: data.updated || new Date().toISOString(),
+      status: "pending",
+      url: data.links?.url || data.url,
+      expiresAt: data.valid_until || new Date(Date.now() + 604800000).toISOString(), // 7 days default
+    };
+  }
+
+  async createConsent(
+    userId: string,
+    basiqUserId: string,
+    purpose: string = "Spending analysis and financial insights"
+  ): Promise<BasiqConsentResponse> {
+    // Create auth link for the user to connect their bank
+    return await this.createAuthLink(basiqUserId);
   }
 
   async getAccounts(basiqUserId: string): Promise<BasiqAccountResponse[]> {

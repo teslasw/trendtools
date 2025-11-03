@@ -472,7 +472,26 @@ async function parsePDFWithVision(buffer: Buffer, fileName: string): Promise<{
         };
       }
 
-      console.log(`[PDF Parser] ⚠ Saved code failed to execute, falling back to full AI extraction...`);
+      console.log(`[PDF Parser] ⚠ Saved code returned 0 transactions, trying universal pattern matcher...`);
+
+      // Try our universal pattern matcher before falling back to expensive AI
+      const patternTransactions = parsePDFWithPatterns(pdfText);
+      if (patternTransactions.length > 0) {
+        console.log(`[PDF Parser] ✓ Universal pattern matcher extracted ${patternTransactions.length} transactions`);
+
+        const enhanced = await enhanceTransactionsWithAI(patternTransactions);
+
+        return {
+          transactions: enhanced,
+          bankName: bank,
+          statementType,
+          extractionMethod: 'pattern_fallback_with_cache',
+          formatId: existingFormat.id,
+          formatFingerprint: fingerprint,
+        };
+      }
+
+      console.log(`[PDF Parser] ⚠ Pattern matcher also failed, falling back to full AI extraction...`);
     } else {
       console.log(`[PDF Parser] ⚠ New statement format - need to learn it!`);
     }
@@ -907,22 +926,8 @@ async function extractTransactionsWithCode(
   console.log(`[Code Execution] Running learned extraction code for ${bank}...`);
 
   try {
-    // Create a safe execution context
-    // We'll use Function constructor to execute the AI-generated code
-    // Note: This is safe in a server environment, but should NEVER be done with user input
-
-    // Extract the function body from the code
-    const functionMatch = extractionCode.match(/function\s+\w+\s*\([^)]*\)\s*{([\s\S]*)}/);
-    if (!functionMatch) {
-      console.error(`[Code Execution] Invalid function format in extraction code`);
-      return [];
-    }
-
-    const functionBody = functionMatch[1];
-
-    // Create the function and execute it
-    const extractTransactions = new Function('pdfText', functionBody);
-    const transactions = extractTransactions(pdfText);
+    // Execute the function code and call it in one step
+    const transactions = eval(`${extractionCode}; extractTransactions(pdfText);`);
 
     if (!Array.isArray(transactions)) {
       console.error(`[Code Execution] Function did not return an array`);
@@ -933,7 +938,7 @@ async function extractTransactionsWithCode(
     return transactions;
   } catch (error) {
     console.error("[Code Execution] Error executing learned code:", error);
-    console.error("[Code Execution] Falling back to AI extraction...");
+    console.error("[Code Execution] Full error:", error);
     // Fallback to AI if code execution fails
     return [];
   }
