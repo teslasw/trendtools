@@ -22,14 +22,32 @@ export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
     const analysisId = searchParams.get("analysisId");
 
-    const whereClause: any = {
+    let whereClause: any = {
       userId: user.id,
     };
 
+    // If analysisId provided, find transactions through the BankStatement relationship
     if (analysisId) {
-      whereClause.bankStatement = {
-        analysisId,
-      };
+      const bankStatements = await prisma.bankStatement.findMany({
+        where: {
+          userId: user.id,
+          analysisId: analysisId,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      const bankStatementIds = bankStatements.map(bs => bs.id);
+
+      if (bankStatementIds.length > 0) {
+        whereClause.bankStatementId = {
+          in: bankStatementIds,
+        };
+      } else {
+        // No bank statements found for this analysis, return empty
+        return NextResponse.json([]);
+      }
     }
 
     const transactions = await prisma.transaction.findMany({
@@ -93,13 +111,38 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
+    // Handle category update - convert category name to ID if needed
+    let categoryId = updates.categoryId;
+
+    if (updates.categoryId && typeof updates.categoryId === 'string') {
+      // Check if it's a category name (not a cuid)
+      if (!updates.categoryId.startsWith('c')) {
+        // It's a category name, find or create it
+        let category = await prisma.category.findUnique({
+          where: { name: updates.categoryId },
+        });
+
+        if (!category) {
+          category = await prisma.category.create({
+            data: {
+              name: updates.categoryId,
+              isSystem: false,
+            },
+          });
+          console.log(`[Transaction Update] Created new category: ${updates.categoryId}`);
+        }
+
+        categoryId = category.id;
+      }
+    }
+
     // Update transaction
     const updated = await prisma.transaction.update({
       where: { id: transactionId },
       data: {
         status: updates.status,
         notes: updates.notes,
-        categoryId: updates.categoryId,
+        categoryId: categoryId,
       },
       include: {
         category: true,

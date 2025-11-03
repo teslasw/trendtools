@@ -42,6 +42,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { Transaction } from "./TransactionTable";
+import { formatCurrency } from "@/lib/utils";
 
 interface SpendingDashboardProps {
   transactions: Transaction[];
@@ -135,7 +136,7 @@ export function SpendingDashboard({ transactions, insights }: SpendingDashboardP
         <Card className="glass-card border-0 shadow-xl">
           <CardHeader className="pb-3">
             <CardDescription>Total Spending</CardDescription>
-            <CardTitle className="text-2xl">${stats.total.toFixed(2)}</CardTitle>
+            <CardTitle className="text-2xl">{formatCurrency(stats.total)}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center text-xs text-muted-foreground">
@@ -149,7 +150,7 @@ export function SpendingDashboard({ transactions, insights }: SpendingDashboardP
           <CardHeader className="pb-3">
             <CardDescription>Potential Savings</CardDescription>
             <CardTitle className="text-2xl text-green-600">
-              ${stats.savingsOpportunity.toFixed(2)}
+              {formatCurrency(stats.savingsOpportunity)}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -163,7 +164,7 @@ export function SpendingDashboard({ transactions, insights }: SpendingDashboardP
         <Card className="glass-card border-0 shadow-xl">
           <CardHeader className="pb-3">
             <CardDescription>Recurring Charges</CardDescription>
-            <CardTitle className="text-2xl">${stats.recurringTotal.toFixed(2)}</CardTitle>
+            <CardTitle className="text-2xl">{formatCurrency(stats.recurringTotal)}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center text-xs text-muted-foreground">
@@ -203,7 +204,7 @@ export function SpendingDashboard({ transactions, insights }: SpendingDashboardP
                   <CheckCircle className="h-4 w-4 text-green-600" />
                   <span className="font-semibold text-green-600">Keep</span>
                 </div>
-                <p className="text-2xl font-bold mt-2">${stats.keepTotal.toFixed(2)}</p>
+                <p className="text-2xl font-bold mt-2">{formatCurrency(stats.keepTotal)}</p>
                 <p className="text-sm text-muted-foreground">
                   {transactions.filter(t => t.status === "KEEP").length} transactions
                 </p>
@@ -216,7 +217,7 @@ export function SpendingDashboard({ transactions, insights }: SpendingDashboardP
                   <XCircle className="h-4 w-4 text-red-600" />
                   <span className="font-semibold text-red-600">Cancel</span>
                 </div>
-                <p className="text-2xl font-bold mt-2">${stats.cancelTotal.toFixed(2)}</p>
+                <p className="text-2xl font-bold mt-2">{formatCurrency(stats.cancelTotal)}</p>
                 <p className="text-sm text-muted-foreground">
                   {transactions.filter(t => t.status === "CANCEL").length} transactions
                 </p>
@@ -229,7 +230,7 @@ export function SpendingDashboard({ transactions, insights }: SpendingDashboardP
                   <HelpCircle className="h-4 w-4 text-yellow-600" />
                   <span className="font-semibold text-yellow-600">Consider</span>
                 </div>
-                <p className="text-2xl font-bold mt-2">${stats.considerTotal.toFixed(2)}</p>
+                <p className="text-2xl font-bold mt-2">{formatCurrency(stats.considerTotal)}</p>
                 <p className="text-sm text-muted-foreground">
                   {transactions.filter(t => t.status === "CONSIDER").length} transactions
                 </p>
@@ -267,7 +268,7 @@ export function SpendingDashboard({ transactions, insights }: SpendingDashboardP
                     />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
+                <Tooltip formatter={(value: number) => formatCurrency(value)} />
               </PieChart>
             </ResponsiveContainer>
 
@@ -285,7 +286,7 @@ export function SpendingDashboard({ transactions, insights }: SpendingDashboardP
                       <Icon className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm font-medium">{category.name}</span>
                     </div>
-                    <span className="text-sm font-semibold">${category.value.toFixed(2)}</span>
+                    <span className="text-sm font-semibold">{formatCurrency(category.value)}</span>
                   </div>
                 );
               })}
@@ -305,7 +306,7 @@ export function SpendingDashboard({ transactions, insights }: SpendingDashboardP
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="week" />
                 <YAxis />
-                <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
+                <Tooltip formatter={(value: number) => formatCurrency(value)} />
                 <Line
                   type="monotone"
                   dataKey="amount"
@@ -348,7 +349,7 @@ export function SpendingDashboard({ transactions, insights }: SpendingDashboardP
                     </p>
                     {insight.value && (
                       <Badge variant="secondary" className="mt-2">
-                        ${insight.value.toFixed(2)}
+                        {formatCurrency(insight.value)}
                       </Badge>
                     )}
                   </div>

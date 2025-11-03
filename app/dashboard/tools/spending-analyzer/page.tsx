@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { FileUploadZone } from "./components/FileUploadZone";
 import { TransactionTable, type Transaction } from "./components/TransactionTable";
 import { SpendingDashboard } from "./components/SpendingDashboard";
+import { SessionsDashboard } from "./components/SessionsDashboard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,8 +47,9 @@ import {
   TrendingDown,
   DollarSign,
   MessageSquare,
+  ArrowLeft,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 
 interface SavedSession {
   id: string;
@@ -104,6 +106,11 @@ export default function SpendingAnalyzerPage() {
       setIsSessionStarted(true);
       setShowSavedSessions(false);
 
+      // Mark session as viewed
+      await fetch(`/api/spending-analyzer/sessions/${sessionId}/view`, {
+        method: "POST",
+      });
+
       // Fetch transactions for this session
       const response = await fetch(`/api/spending-analyzer/transactions?analysisId=${sessionId}`);
 
@@ -122,6 +129,8 @@ export default function SpendingAnalyzerPage() {
           notes: txn.notes,
           isRecurring: false,
           aiConfidence: txn.aiConfidence,
+          merchantType: txn.originalData?.merchantType,
+          merchantDescription: txn.originalData?.merchantDescription,
         }));
 
         setTransactions(formattedTransactions);
@@ -132,6 +141,38 @@ export default function SpendingAnalyzerPage() {
         const session = savedSessions.find(s => s.id === sessionId);
         if (session) {
           setSessionName(session.name);
+        }
+
+        // Generate insights for loaded session
+        if (formattedTransactions.length > 0) {
+          const totalSpent = formattedTransactions
+            .filter((t: Transaction) => t.amount < 0)
+            .reduce((sum: number, t: Transaction) => sum + Math.abs(t.amount), 0);
+
+          const totalReceived = formattedTransactions
+            .filter((t: Transaction) => t.amount > 0)
+            .reduce((sum: number, t: Transaction) => sum + t.amount, 0);
+
+          setInsights([
+            {
+              type: "summary",
+              title: "Review Loaded",
+              description: `${formattedTransactions.length} transactions loaded`,
+              value: formattedTransactions.length,
+            },
+            {
+              type: "spending",
+              title: "Total Spent",
+              description: `Money going out`,
+              value: totalSpent,
+            },
+            {
+              type: "income",
+              title: "Total Received",
+              description: `Money coming in`,
+              value: totalReceived,
+            },
+          ]);
         }
       }
     } catch (error) {
@@ -205,9 +246,11 @@ export default function SpendingAnalyzerPage() {
 
       const uploadResult = await uploadResponse.json();
       console.log(`Processed ${uploadResult.transactionCount} transactions`);
+      console.log('Upload result:', uploadResult);
 
       // Set the current analysis ID
       setCurrentAnalysisId(uploadResult.analysisId);
+      console.log('Set analysisId to:', uploadResult.analysisId);
 
       // Save the session to database
       await fetch("/api/spending-analyzer/sessions", {
@@ -220,15 +263,18 @@ export default function SpendingAnalyzerPage() {
       });
 
       // Fetch the processed transactions
-      const transactionsResponse = await fetch(
-        `/api/spending-analyzer/transactions?analysisId=${uploadResult.analysisId}`
-      );
+      const transactionsUrl = `/api/spending-analyzer/transactions?analysisId=${uploadResult.analysisId}`;
+      console.log('Fetching transactions from:', transactionsUrl);
+
+      const transactionsResponse = await fetch(transactionsUrl);
 
       if (!transactionsResponse.ok) {
+        console.error('Failed to fetch transactions:', transactionsResponse.status);
         throw new Error("Failed to fetch transactions");
       }
 
       const transactionData = await transactionsResponse.json();
+      console.log('Fetched transaction data:', transactionData.length, 'transactions');
 
       // Convert date strings to Date objects and format transactions
       const formattedTransactions = transactionData.map((txn: any) => ({
@@ -242,6 +288,8 @@ export default function SpendingAnalyzerPage() {
         notes: txn.notes,
         isRecurring: false, // Will be set by AI categorization
         aiConfidence: txn.aiConfidence,
+        merchantType: txn.originalData?.merchantType,
+        merchantDescription: txn.originalData?.merchantDescription,
       }));
 
       setTransactions(formattedTransactions);
@@ -276,6 +324,8 @@ export default function SpendingAnalyzerPage() {
               notes: txn.notes,
               isRecurring: txn.notes?.includes("recurring") || false,
               aiConfidence: txn.aiConfidence,
+              merchantType: txn.originalData?.merchantType,
+              merchantDescription: txn.originalData?.merchantDescription,
             }));
             setTransactions(refreshedTransactions);
           }
@@ -287,17 +337,32 @@ export default function SpendingAnalyzerPage() {
 
       // Generate basic insights
       if (formattedTransactions.length > 0) {
-        const totalSpent = formattedTransactions.reduce(
-          (sum: number, t: Transaction) => sum + Math.abs(t.amount),
-          0
-        );
+        const totalSpent = formattedTransactions
+          .filter((t: Transaction) => t.amount < 0)
+          .reduce((sum: number, t: Transaction) => sum + Math.abs(t.amount), 0);
+
+        const totalReceived = formattedTransactions
+          .filter((t: Transaction) => t.amount > 0)
+          .reduce((sum: number, t: Transaction) => sum + t.amount, 0);
 
         setInsights([
           {
             type: "summary",
             title: "Upload Complete",
-            description: `Successfully processed ${formattedTransactions.length} transactions totaling $${totalSpent.toFixed(2)}`,
+            description: `Successfully processed ${formattedTransactions.length} transactions`,
             value: formattedTransactions.length,
+          },
+          {
+            type: "spending",
+            title: "Total Spent",
+            description: `Money going out`,
+            value: totalSpent,
+          },
+          {
+            type: "income",
+            title: "Total Received",
+            description: `Money coming in`,
+            value: totalReceived,
           },
         ]);
       }
@@ -339,6 +404,27 @@ export default function SpendingAnalyzerPage() {
     }
 
     try {
+      setIsProcessing(true);
+
+      // Save transaction updates
+      const savePromises = transactions.map(async (txn) => {
+        return fetch("/api/spending-analyzer/transactions", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            transactionId: txn.id,
+            updates: {
+              status: txn.status,
+              notes: txn.notes,
+              categoryId: txn.category, // Category name or ID
+            },
+          }),
+        });
+      });
+
+      await Promise.all(savePromises);
+
+      // Save session metadata
       const response = await fetch("/api/spending-analyzer/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -351,10 +437,34 @@ export default function SpendingAnalyzerPage() {
       if (response.ok) {
         console.log("Session saved successfully");
         fetchSavedSessions(); // Refresh the saved sessions list
+
+        // Show success feedback
+        setInsights(prev => [...prev, {
+          type: "success",
+          title: "Saved",
+          description: `All changes saved successfully`,
+        }]);
       }
     } catch (error) {
       console.error("Error saving session:", error);
+      setInsights(prev => [...prev, {
+        type: "error",
+        title: "Save Failed",
+        description: "Failed to save changes. Please try again.",
+      }]);
+    } finally {
+      setIsProcessing(false);
     }
+  };
+
+  const handleBackToHome = () => {
+    setIsSessionStarted(false);
+    setTransactions([]);
+    setInsights([]);
+    setCurrentAnalysisId(null);
+    setSessionName("");
+    setAnalysisStatus("idle");
+    setUploadedFiles([]);
   };
 
   // Main content when session is started
@@ -363,16 +473,22 @@ export default function SpendingAnalyzerPage() {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-start pt-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">{sessionName}</h1>
-            <p className="text-muted-foreground mt-2">
-              Analyze your spending patterns with AI-powered insights
-            </p>
+          <div className="flex items-start gap-4">
+            <Button variant="ghost" onClick={handleBackToHome} className="mt-1">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">{sessionName}</h1>
+              <p className="text-muted-foreground mt-2">
+                Analyze your spending patterns with AI-powered insights
+              </p>
+            </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={handleSave}>
+            <Button variant="outline" onClick={handleSave} disabled={isProcessing}>
               <Save className="mr-2 h-4 w-4" />
-              Save
+              {isProcessing ? "Saving..." : "Save"}
             </Button>
             <Button variant="outline" onClick={handleExport}>
               <Download className="mr-2 h-4 w-4" />
@@ -608,20 +724,18 @@ export default function SpendingAnalyzerPage() {
           </TabsContent>
 
           <TabsContent value="transactions" className="space-y-4">
-            <Card className="glass-card border-0">
-              <CardHeader>
-                <CardTitle>Review Transactions</CardTitle>
-                <CardDescription>
-                  Mark transactions as Keep, Cancel, or Consider for further review
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <TransactionTable
-                  transactions={transactions}
-                  onUpdateTransaction={handleUpdateTransaction}
-                  onBulkUpdate={handleBulkUpdate}
-                />
-              </CardContent>
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight mb-2">Review Transactions</h2>
+              <p className="text-muted-foreground mb-4">
+                Mark transactions as Keep, Cancel, or Consider for further review
+              </p>
+            </div>
+            <Card className="glass-card border-0 shadow-xl overflow-hidden">
+              <TransactionTable
+                transactions={transactions}
+                onUpdateTransaction={handleUpdateTransaction}
+                onBulkUpdate={handleBulkUpdate}
+              />
             </Card>
           </TabsContent>
 
@@ -758,8 +872,8 @@ export default function SpendingAnalyzerPage() {
       </Card>
 
       {/* Quick Actions */}
-      <div className="grid md:grid-cols-3 gap-4">
-        <Card 
+      <div className="grid md:grid-cols-2 gap-4">
+        <Card
           className="glass-card border-0 cursor-pointer hover:shadow-lg transition-shadow"
           onClick={() => setShowNewAnalysisDialog(true)}
         >
@@ -767,61 +881,14 @@ export default function SpendingAnalyzerPage() {
             <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
               <Plus className="h-6 w-6 text-primary" />
             </div>
-            <CardTitle>New Analysis</CardTitle>
+            <CardTitle>New Review</CardTitle>
             <CardDescription>
-              Start a fresh spending analysis session
+              Start a fresh spending review
             </CardDescription>
           </CardHeader>
         </Card>
 
-        <Card 
-          className={cn(
-            "glass-card border-0",
-            !advisor && "opacity-75"
-          )}
-        >
-          <CardHeader>
-            <div className="h-12 w-12 rounded-full bg-amber-500/10 flex items-center justify-center mb-3">
-              <Building2 className="h-6 w-6 text-amber-500" />
-            </div>
-            <CardTitle className="flex items-center gap-2">
-              Connect Bank
-              {!advisor && (
-                <Badge className="bg-gradient-to-r from-sky-500 to-blue-500 text-white border-0 text-xs px-2 py-0.5">
-                  Clients Only
-                </Badge>
-              )}
-            </CardTitle>
-            <CardDescription>
-              {advisor 
-                ? "Securely connect to your bank account" 
-                : "Available for advisory clients only"}
-            </CardDescription>
-          </CardHeader>
-          {advisor ? (
-            <CardContent className="pt-0">
-              <BasiqConnect
-                onSuccess={handleBankConnectionSuccess}
-                onError={handleBankConnectionError}
-                disabled={!advisor}
-              />
-            </CardContent>
-          ) : (
-            <CardContent className="pt-0">
-              <Button 
-                className="w-full" 
-                size="lg"
-                disabled
-                variant="outline"
-              >
-                <Lock className="mr-2 h-4 w-4" />
-                Clients Only
-              </Button>
-            </CardContent>
-          )}
-        </Card>
-
-        <Card 
+        <Card
           className="glass-card border-0 cursor-pointer hover:shadow-lg transition-shadow"
           onClick={() => setShowSavedSessions(!showSavedSessions)}
         >
@@ -829,89 +896,30 @@ export default function SpendingAnalyzerPage() {
             <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center mb-3">
               <History className="h-6 w-6 text-green-500" />
             </div>
-            <CardTitle>Saved Sessions</CardTitle>
+            <CardTitle>Your Reviews</CardTitle>
             <CardDescription>
-              Continue with a previous analysis
+              Continue a previous review
             </CardDescription>
           </CardHeader>
         </Card>
       </div>
 
-      {/* Saved Sessions */}
+      {/* Your Reviews */}
       {showSavedSessions && (
-        <Card className="glass-card border-0">
-          <CardHeader>
-            <CardTitle>Your Saved Sessions</CardTitle>
-            <CardDescription>
-              Select a session to continue analyzing
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {savedSessions.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">No saved sessions yet</p>
-                <Button 
-                  className="mt-4" 
-                  onClick={() => setShowNewAnalysisDialog(true)}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Start Your First Analysis
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {savedSessions.map((session) => (
-                  <div
-                    key={session.id}
-                    className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
-                  >
-                    <div>
-                      <h4 className="font-semibold">{session.name}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {session.transactionCount} transactions • ${session.totalAmount.toFixed(2)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Created {new Date(session.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        onClick={() => loadSession(session.id)}
-                      >
-                        Continue
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          if (confirm(`Delete "${session.name}"?`)) {
-                            deleteSession(session.id);
-                          }
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <SessionsDashboard onViewSession={loadSession} />
       )}
 
-      {/* New Analysis Dialog */}
+      {/* New Review Dialog */}
       <Dialog open={showNewAnalysisDialog} onOpenChange={setShowNewAnalysisDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Start New Analysis</DialogTitle>
+            <DialogTitle>Start New Review</DialogTitle>
             <DialogDescription>
-              Give your spending analysis a name to get started
+              Give your spending review a name to get started
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <Label htmlFor="session-name">Session Name</Label>
+            <Label htmlFor="session-name">Review Name</Label>
             <Input
               id="session-name"
               placeholder="e.g., January 2024 Spending Review"
@@ -926,7 +934,7 @@ export default function SpendingAnalyzerPage() {
             </Button>
             <Button onClick={handleStartSession} disabled={!sessionName.trim()}>
               <Sparkles className="mr-2 h-4 w-4" />
-              Start Analysis
+              Start Review
             </Button>
           </DialogFooter>
         </DialogContent>

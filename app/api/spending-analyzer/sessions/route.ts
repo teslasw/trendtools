@@ -58,6 +58,7 @@ export async function GET(req: NextRequest) {
         name: analysis.name,
         createdAt: analysis.createdAt,
         updatedAt: analysis.updatedAt,
+        viewedAt: analysis.viewedAt,
         transactionCount,
         totalAmount,
         status: analysis.status,

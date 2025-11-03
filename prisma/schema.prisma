@@ -178,18 +178,57 @@ model Category {
 }
 
 model BankStatement {
-  id          String        @id @default(cuid())
-  userId      String
-  analysisId  String?       // Link to spending analysis session
-  filename    String
-  fileUrl     String?
-  uploadedAt  DateTime      @default(now())
-  processedAt DateTime?
-  status      String        @default("pending")
+  id                String        @id @default(cuid())
+  userId            String
+  analysisId        String?       // Link to spending analysis session
+  filename          String
+  fileUrl           String?
+  uploadedAt        DateTime      @default(now())
+  processedAt       DateTime?
+  status            String        @default("pending")
+
+  // Bank detection and extraction tracking
+  bankName          String?       // Detected bank name (e.g., "American Express", "Commonwealth Bank")
+  statementType     String?       // Statement type (e.g., "credit_card", "transaction")
+  extractionMethod  String?       // How transactions were extracted (e.g., "pattern1", "pattern2", "ai", "ai_with_cache")
+  extractionMetadata Json?        // Additional metadata about extraction (pattern used, confidence, etc.)
+
+  // Statement format fingerprinting
+  formatFingerprint String?       // Hash of first page to identify statement format
+  formatId          String?       // Link to StatementFormat if format is recognized
 
   user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   analysis     SpendingAnalysis? @relation(fields: [analysisId], references: [id])
+  format       StatementFormat?  @relation(fields: [formatId], references: [id])
   transactions Transaction[]
+
+  @@index([formatFingerprint])
+}
+
+// Store learned extraction code for each statement format
+model StatementFormat {
+  id                   String   @id @default(cuid())
+  bankName             String   // Bank name (e.g., "American Express")
+  statementType        String   // Type (e.g., "credit_card", "transaction")
+  formatFingerprint    String   @unique // Hash identifying this format
+
+  // AI-generated executable code for extraction
+  extractionCode       String?  @db.Text // JavaScript function to extract transactions (NO AI needed!)
+  formatDescription    String?  @db.Text // Human-readable description of the format
+
+  // Example data for validation
+  sampleFirstPage      String?  @db.Text // First page sample text
+  sampleTransactions   Json?    // 3-5 example transactions from first learning
+
+  // Metadata
+  learnedAt            DateTime @default(now())
+  lastUsedAt           DateTime @default(now())
+  useCount             Int      @default(1)
+
+  // Relations
+  statements           BankStatement[]
+
+  @@index([bankName, statementType])
 }
 
 model Transaction {
@@ -261,6 +300,7 @@ model SpendingAnalysis {
   userId        String
   name          String   // User-defined instance name
   status        String   @default("processing") // processing, completed, failed
+  viewedAt      DateTime? // Track when user first views completed analysis
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

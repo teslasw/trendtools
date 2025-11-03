@@ -27,7 +27,7 @@ import {
   Repeat,
   StickyNote,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 
 export interface Transaction {
   id: string;
@@ -40,6 +40,8 @@ export interface Transaction {
   notes?: string;
   isRecurring?: boolean;
   aiConfidence?: number;
+  merchantType?: string;
+  merchantDescription?: string;
 }
 
 interface TransactionTableProps {
@@ -107,9 +109,9 @@ export function TransactionTable({
   };
 
   return (
-    <div className="space-y-4">
+    <>
       {selectedIds.length > 0 && (
-        <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+        <div className="flex items-center justify-between p-4 bg-muted/50 border-b">
           <span className="text-sm font-medium">
             {selectedIds.length} transactions selected
           </span>
@@ -145,9 +147,8 @@ export function TransactionTable({
         </div>
       )}
 
-      <div className="rounded-lg border overflow-hidden">
-        <Table>
-          <TableHeader>
+      <Table>
+          <TableHeader className="bg-white dark:bg-gray-900">
             <TableRow>
               <TableHead className="w-12">
                 <input
@@ -163,17 +164,22 @@ export function TransactionTable({
                   className="rounded border-gray-300"
                 />
               </TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              <TableHead className="text-center">Action</TableHead>
-              <TableHead>Notes</TableHead>
+              <TableHead className="font-bold">Date</TableHead>
+              <TableHead className="font-bold">Description</TableHead>
+              <TableHead className="font-bold">Category</TableHead>
+              <TableHead className="font-bold text-right">Amount</TableHead>
+              <TableHead className="font-bold text-right">Action</TableHead>
+              <TableHead className="font-bold text-right">Notes</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {transactions.map((transaction) => (
-              <TableRow key={transaction.id}>
+              <TableRow
+                key={transaction.id}
+                className={cn(
+                  selectedIds.includes(transaction.id) && "bg-white dark:bg-gray-900"
+                )}
+              >
                 <TableCell>
                   <input
                     type="checkbox"
@@ -194,7 +200,17 @@ export function TransactionTable({
                   <div className="space-y-1">
                     <p className="text-sm font-medium">{transaction.description}</p>
                     {transaction.merchant && (
-                      <p className="text-xs text-muted-foreground">{transaction.merchant}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-xs text-muted-foreground">{transaction.merchant}</p>
+                        {transaction.merchantType && (
+                          <Badge variant="outline" className="text-xs h-5 px-1.5 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800">
+                            {transaction.merchantType}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                    {transaction.merchantDescription && (
+                      <p className="text-xs text-muted-foreground italic">{transaction.merchantDescription}</p>
                     )}
                     {transaction.isRecurring && (
                       <Badge variant="secondary" className="text-xs">
@@ -223,64 +239,98 @@ export function TransactionTable({
                 <TableCell className="text-right">
                   <span className={cn(
                     "font-medium",
-                    transaction.amount < 0 ? "text-green-600" : "text-red-600"
+                    transaction.amount < 0 ? "text-red-600" : "text-green-600"
                   )}>
-                    ${Math.abs(transaction.amount).toFixed(2)}
+                    {formatCurrency(Math.abs(transaction.amount))}
                   </span>
                 </TableCell>
-                <TableCell>
-                  <RadioGroup
-                    value={transaction.status || ""}
-                    onValueChange={(value) => handleStatusChange(
-                      transaction.id,
-                      value as "KEEP" | "CANCEL" | "CONSIDER"
-                    )}
-                    className="flex justify-center gap-4"
-                  >
-                    <div className="flex items-center space-x-1">
+                <TableCell className="text-right">
+                  {transaction.amount < 0 ? (
+                    <RadioGroup
+                      value={transaction.status || ""}
+                      onValueChange={(value) => handleStatusChange(
+                        transaction.id,
+                        value as "KEEP" | "CANCEL" | "CONSIDER"
+                      )}
+                      className="flex justify-end gap-2"
+                    >
+                    <div className={cn(
+                      "flex items-center space-x-1 px-3 py-1.5 rounded-full transition-colors",
+                      transaction.status === "KEEP" ? "bg-green-100 dark:bg-green-900/30" : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                    )}>
                       <RadioGroupItem
                         value="KEEP"
                         id={`keep-${transaction.id}`}
-                        className="text-green-600"
+                        className={cn(
+                          "border-2",
+                          transaction.status === "KEEP" ? "border-green-600 bg-green-600" : "border-gray-300"
+                        )}
                       />
                       <Label
                         htmlFor={`keep-${transaction.id}`}
-                        className="cursor-pointer"
+                        className="cursor-pointer flex items-center"
                       >
-                        <Check className="h-4 w-4 text-green-600" />
+                        <Check className={cn(
+                          "h-4 w-4",
+                          transaction.status === "KEEP" ? "text-green-600" : "text-gray-400"
+                        )} />
                       </Label>
                     </div>
-                    <div className="flex items-center space-x-1">
+                    <div className={cn(
+                      "flex items-center space-x-1 px-3 py-1.5 rounded-full transition-colors",
+                      transaction.status === "CANCEL" ? "bg-red-100 dark:bg-red-900/30" : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                    )}>
                       <RadioGroupItem
                         value="CANCEL"
                         id={`cancel-${transaction.id}`}
-                        className="text-red-600"
+                        className={cn(
+                          "border-2",
+                          transaction.status === "CANCEL" ? "border-red-600 bg-red-600" : "border-gray-300"
+                        )}
                       />
                       <Label
                         htmlFor={`cancel-${transaction.id}`}
-                        className="cursor-pointer"
+                        className="cursor-pointer flex items-center"
                       >
-                        <X className="h-4 w-4 text-red-600" />
+                        <X className={cn(
+                          "h-4 w-4",
+                          transaction.status === "CANCEL" ? "text-red-600" : "text-gray-400"
+                        )} />
                       </Label>
                     </div>
-                    <div className="flex items-center space-x-1">
+                    <div className={cn(
+                      "flex items-center space-x-1 px-3 py-1.5 rounded-full transition-colors",
+                      transaction.status === "CONSIDER" ? "bg-yellow-100 dark:bg-yellow-900/30" : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                    )}>
                       <RadioGroupItem
                         value="CONSIDER"
                         id={`consider-${transaction.id}`}
-                        className="text-yellow-600"
+                        className={cn(
+                          "border-2",
+                          transaction.status === "CONSIDER" ? "border-yellow-600 bg-yellow-600" : "border-gray-300"
+                        )}
                       />
                       <Label
                         htmlFor={`consider-${transaction.id}`}
-                        className="cursor-pointer"
+                        className="cursor-pointer flex items-center"
                       >
-                        <HelpCircle className="h-4 w-4 text-yellow-600" />
+                        <HelpCircle className={cn(
+                          "h-4 w-4",
+                          transaction.status === "CONSIDER" ? "text-yellow-600" : "text-gray-400"
+                        )} />
                       </Label>
                     </div>
                   </RadioGroup>
+                  ) : (
+                    <Badge variant="outline" className="text-green-600 border-green-200">
+                      <TrendingUp className="h-3 w-3 mr-1" />
+                      Income
+                    </Badge>
+                  )}
                 </TableCell>
-                <TableCell>
+                <TableCell className="text-right">
                   {editingNotes === transaction.id ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-end gap-2">
                       <Input
                         value={tempNote}
                         onChange={(e) => setTempNote(e.target.value)}
@@ -306,7 +356,7 @@ export function TransactionTable({
                         setEditingNotes(transaction.id);
                         setTempNote(transaction.notes || "");
                       }}
-                      className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+                      className="flex items-center justify-end gap-1 text-sm text-muted-foreground hover:text-foreground ml-auto"
                     >
                       <StickyNote className="h-4 w-4" />
                       {transaction.notes || "Add note"}
@@ -317,7 +367,6 @@ export function TransactionTable({
             ))}
           </TableBody>
         </Table>
-      </div>
-    </div>
+    </>
   );
 }
