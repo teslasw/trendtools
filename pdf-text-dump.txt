@@ -1,0 +1,527 @@
+Reading PDF...
+Parsing PDF...
+========== FULL PDF TEXT (EXACT TEXT SENT TO API) ==========
+
+
+American Express Platinum Reserve Credit Card
+Statement of Account
+Prepared forMembership NumberDate
+MALCOLM LAURENCE RAMSAYXXXX-XXXXXX-32001September 16, 2025
+ACCOUNT SUMMARYStatement includes payments and charges received bySeptember 16, 2025
+OPENING BALANCE
+17,214.70
+-
+NEW CREDITS
+17,214.70
++
+NEW DEBITS
+18,802.44
+=
+CLOSING BALANCE
+18,802.44
+Minimum Payment Due
+by October11, 2025
+$470.06
+Pay this amount by your
+payment due date to
+avoid a late payment fee.
+Page  1 of 7
+americanexpress.com.au
+Customer Service
+1800 059 388
+American Express Credit Card
+GPO Box 5159
+Sydney NSW 2001
+XXXX-XXXXXX-32001
+Membership Number
+Closing Standard Balance$18,802.44
+Minimum Payment Due$470.06
+Payment Due DateOctober11,2025
+MALCOLM LAURENCE RAMSAY
+3 Berkeley Close
+Wodonga VIC 3690
+American Express Australia Limited  ABN 92 108 952 085. Australian Credit Licence No. 291313.  ® Registered Trademark of American Express Company.
+..........
+PAYMENT ADVICE
+To minimise further interest charges, pay$18,802.44 by or before the payment due date.
+Statement Period
+From August 17 to September 16, 2025
+CREDIT SUMMARY
+CREDIT LIMIT $AVAILABLE CREDIT $TOTAL BALANCE $
+20,000.001,197.5618,802.44
+Request a change to your Credit Limit at americanexpress.com.au/manageyourlimit
+MINIMUM REPAYMENT WARNINGIf you make only the Minimum Payment each month, you will pay more interest and it will take
+you longer to pay off your balance. For example:
+If you make no additional charges using
+this card and each month you pay...
+You will pay off the Closing Balance shown
+on this statement in about...
+And you will end up paying an estimated
+total of interest charges of...
+Only the minimum payment51 year(s),4 month(s)$68,247.47
+$994.02(*)2 years$5,054.04
+a saving of$63,193.43
+(*) The estimated monthly payment to pay off your balance in 2 years assumes all balances are subject to the highest rate on your account.
+If you have exceeded your credit limit and/or your account is overdue, these amounts are included in the month's minimum repayment only.
+To learn more about the minimum repayment warning visit,americanexpress.com.au/cardsmart
+
+American Express Platinum Reserve Credit Card
+Statement of Account
+Prepared forMembership NumberDate
+MALCOLM LAURENCE RAMSAYxxxx-xxxxxx-32001September 16, 2025
+Page  2 of 7
+Please check all transactions carefully and immediately advise us of any unauthorised use of the Card.
+Your Account Payment OptionsPaying in person
+Pay your bill online
+Visit  americanexpress.com.au/paybillonline  to set up
+Online Bill Payment to make immediate or schedule
+payments from your bank account.
+You can pay your Card Account in person with EFTPOS or Cheque
+(where accepted) at Australia Post Offices.
+Please note that if you are enrolled in Online Statements you
+cannot make payments in person at Australia Post Offices.
+Direct Debit
+To enrol, visitamericanexpress.com.au/directdebit or call
+ the number on the back of your Card.
+You must present your Card and current account statement when paying your
+Card Account.
+A $3 processing fee will apply to payments made in person.
+PayID: p00532181372006@americanexpress.com
+Pay this bill faster to the  American Express Card PayID provided
+above, via mobile or internet banking.
+When paying for the first first time, activate your Amex Card
+PayID by visitingwww.amex.com.au/activatepayid
+Biller Code: 5082
+Ref: Please use your 15 digit Card Account number
+Please allow up to 3 business days for payment
+to be processed to your Account
+BPAY® this payment via internet or phone banking.
+BPAY View® - View and pay this bill using internet banking.
+BPAY View® Registration No. - 15 digit Card Account number.
+If you do not wish to be contacted for promotional or marketing offers,  or
+wish to change the address, name or phone number on your Account,
+please call  the number at the back of your Card.
+INTEREST RATES
+CATEGORYANNUAL
+INTEREST RATE
+Purchases23.99%
+Cash advances23.99%
+For a guide on how to read your statement visit,  americanexpress.com.au/mystatement
+
+American Express Platinum Reserve Credit Card
+Statement of Account
+Prepared forMembership NumberDate
+MALCOLM LAURENCE RAMSAYxxxx-xxxxxx-32001September 16, 2025
+Page  3 of 7
+TRANSACTION DETAILS
+TRANSACTION DATETRANSACTION DETAILSFOREIGN SPENDAMOUNT ($)
+New Payments
+August27
+ONLINE PAYMENT RECEIVED - THANKYOU W1863
+10,214.70
+CR
+September5
+ONLINE PAYMENT RECEIVED - THANKYOU W4521
+7,000.00
+CR
+Total New Payments17,214.70
+CR
+New Standard Transactions for:MALCOLM LAURENCE RAMSAY
+Card Number xxxx-xxxxxx-32001
+August16
+AIRTABLE.COM/BILL       SAN FRANCISCO
+UNITED STATES DOLLAR
+          72.00
+114.06
+AUD 114.06 includes conversion commission of AUD           3.32
+August16
+WEBFLOW.COM             SAN FRANCISCO
+UNITED STATES DOLLAR
+          31.90
+50.53
+AUD 50.53 includes conversion commission of AUD           1.47
+August19
+SLACK T08TDS9470U       DUBLIN
+UNITED STATES DOLLAR
+          35.00
+55.62
+AUD 55.62 includes conversion commission of AUD           1.62
+August20
+DIRECTUS.CLOUD          STAMFORD
+UNITED STATES DOLLAR
+          20.00
+32.07
+AUD 32.07 includes conversion commission of AUD            .93
+August21
+SUPABASE                SINGAPORE
+UNITED STATES DOLLAR
+          27.19
+43.61
+AUD 43.61 includes conversion commission of AUD           1.27
+August22
+BUBBLE PLUGIN SUPABASE  NEW YORK
+UNITED STATES DOLLAR
+         144.00
+231.27
+AUD 231.27 includes conversion commission of AUD           6.74
+August22
+HOVER                   STARKVILLE
+UNITED STATES DOLLAR
+          18.94
+30.41
+AUD 30.41 includes conversion commission of AUD            .89
+August22
+WEBFLOW.COM             SAN FRANCISCO
+UNITED STATES DOLLAR
+          31.90
+51.23
+AUD 51.23 includes conversion commission of AUD           1.49
+August23
+WWW.MAKE.COM            NEW YORK
+UNITED STATES DOLLAR
+          34.12
+54.79
+AUD 54.79 includes conversion commission of AUD           1.60
+August24
+ZOOM.COM 888-799-9666   SAN JOSE
+172.44
+August24
+QR-CODE.IO              MIAMI
+UNITED STATES DOLLAR
+          49.95
+80.22
+AUD 80.22 includes conversion commission of AUD           2.34
+August24
+CLAUDE.AI SUBSCRIPTION  SAN FRANCISCO
+UNITED STATES DOLLAR
+         212.81
+341.79
+AUD 341.79 includes conversion commission of AUD           9.96
+August25
+ADOBE Adobe Systems     SAGGART
+43.97
+August26
+XGSTAT.COM              AMSTERDAM
+EUROPEAN UNION EURO
+           4,90
+9.11
+AUD 9.11 includes conversion commission of AUD            .27
+August26
+LOTTIEFILES.COM         SAN FRANCISCO
+UNITED STATES DOLLAR
+         299.88
+476.43
+AUD 476.43 includes conversion commission of AUD          13.88
+August26
+TERMIUS CORPORATION     SAN FRANCISCO
+UNITED STATES DOLLAR
+          96.00
+152.87
+AUD 152.87 includes conversion commission of AUD           4.45
+
+American Express Platinum Reserve Credit Card
+Statement of Account
+Prepared forMembership NumberDate
+MALCOLM LAURENCE RAMSAYxxxx-xxxxxx-32001September 16, 2025
+Page  4 of 7
+TRANSACTION DETAILS
+TRANSACTION DATETRANSACTION DETAILSFOREIGN SPENDAMOUNT ($)
+August26
+REBRANDLY.COM           DUBLIN
+UNITED STATES DOLLAR
+          39.00
+62.10
+AUD 62.10 includes conversion commission of AUD           1.81
+August27
+WWW.MARKUP.IO           NEW YORK
+UNITED STATES DOLLAR
+          79.00
+125.95
+AUD 125.95 includes conversion commission of AUD           3.67
+August28
+WEBFLOW.COM             SAN FRANCISCO
+UNITED STATES DOLLAR
+          31.90
+50.86
+AUD 50.86 includes conversion commission of AUD           1.48
+August29
+HOVER                   STARKVILLE
+UNITED STATES DOLLAR
+          54.74
+86.66
+AUD 86.66 includes conversion commission of AUD           2.52
+August29
+ANTHROPIC: CLAUDE TEAM  SAN FRANCISCO
+4.09
+August31
+SEED                    SAN FRANCISCO
+UNITED STATES DOLLAR
+          50.00
+78.98
+AUD 78.98 includes conversion commission of AUD           2.30
+August31
+OPENAI *CHATGPT SUBSCR  SAN FRANCISCO
+UNITED STATES DOLLAR
+          20.00
+31.59
+AUD 31.59 includes conversion commission of AUD            .92
+September1
+DIGITALOCEAN.COM        GROSVENOR PLACE
+UNITED STATES DOLLAR
+          44.00
+69.49
+AUD 69.49 includes conversion commission of AUD           2.02
+September1
+VERCEL INC.             COVINA
+UNITED STATES DOLLAR
+          20.00
+31.59
+AUD 31.59 includes conversion commission of AUD            .92
+September1
+GOOGLE*CLOUD CWHLXW     PYRMONT
+175.73
+September1
+SINCH MAILGUN           SAN ANTONIO
+UNITED STATES DOLLAR
+          35.00
+55.28
+AUD 55.28 includes conversion commission of AUD           1.61
+September1
+DIGITALOCEAN.COM        GROSVENOR PLACE
+UNITED STATES DOLLAR
+          29.80
+47.07
+AUD 47.07 includes conversion commission of AUD           1.37
+September1
+SINCH MAILGUN           SAN ANTONIO
+UNITED STATES DOLLAR
+          15.00
+23.69
+AUD 23.69 includes conversion commission of AUD            .69
+September1
+MONGODBCLOUD WCT OP...  DUBLIN
+UNITED STATES DOLLAR
+         426.45
+672.44
+AUD 672.44 includes conversion commission of AUD          19.59
+September1
+MONGODBCLOUD TESLA ...  DUBLIN
+UNITED STATES DOLLAR
+         829.97
+1,308.73
+AUD 1308.73 includes conversion commission of AUD          38.12
+September2
+AMAZON WEB SERVICES     SYDNEY
+126.34
+September2
+AMAZON WEB SERVICES     SYDNEY
+2,465.03
+September2
+AMAZON WEB SERVICES     SYDNEY
+2,463.33
+September2
+AMAZON WEB SERVICES     SYDNEY
+66.73
+September2
+AMAZON WEB SERVICES     SYDNEY
+66.24
+September3
+TWILIO SENDGRID         SAN FRANCISCO
+UNITED STATES DOLLAR
+          19.95
+31.70
+AUD 31.70 includes conversion commission of AUD            .92
+September3
+GITBOOK PLUS            COVINA
+UNITED STATES DOLLAR
+         179.00
+283.64
+AUD 283.64 includes conversion commission of AUD           8.26
+
+American Express Platinum Reserve Credit Card
+Statement of Account
+Prepared forMembership NumberDate
+MALCOLM LAURENCE RAMSAYxxxx-xxxxxx-32001September 16, 2025
+Page  5 of 7
+TRANSACTION DETAILS
+TRANSACTION DATETRANSACTION DETAILSFOREIGN SPENDAMOUNT ($)
+September4
+HOVER                   STARKVILLE
+UNITED STATES DOLLAR
+          24.74
+39.20
+AUD 39.20 includes conversion commission of AUD           1.14
+September4
+HELIUS                  CLAYMONT
+UNITED STATES DOLLAR
+          49.00
+77.64
+AUD 77.64 includes conversion commission of AUD           2.26
+September4
+CURSOR, AI POWERED IDE  NEW YORK
+UNITED STATES DOLLAR
+          20.00
+31.69
+AUD 31.69 includes conversion commission of AUD            .92
+September4
+FIGMA                   SAN FRANCISCO
+UNITED STATES DOLLAR
+          44.00
+69.73
+AUD 69.73 includes conversion commission of AUD           2.03
+September4
+PIPEDREAM, INC.         SAN FRANCISCO
+UNITED STATES DOLLAR
+          45.00
+71.31
+AUD 71.31 includes conversion commission of AUD           2.08
+September5
+KALEIDO, INC.           RALEIGH
+UNITED STATES DOLLAR
+       2,118.95
+3,358.23
+AUD 3358.23 includes conversion commission of AUD          97.81
+September5
+TALLY.SO                GENT
+UNITED STATES DOLLAR
+          29.00
+45.74
+AUD 45.74 includes conversion commission of AUD           1.33
+September6
+ERASER.IO               SAN FRANCISCO
+UNITED STATES DOLLAR
+           9.60
+15.14
+AUD 15.14 includes conversion commission of AUD            .44
+September6
+ZOHO-WORKPLACE          SINGAPORE
+SINGAPORE DOLLAR
+          52.19
+64.06
+AUD 64.06 includes conversion commission of AUD           1.87
+September7
+PM2 PLUS                PARIS
+UNITED STATES DOLLAR
+          69.00
+108.84
+AUD 108.84 includes conversion commission of AUD           3.17
+September7
+ANTHROPIC: CLAUDE TEAM  SAN FRANCISCO
+577.94
+September7
+REBRANDLY.COM           DUBLIN
+UNITED STATES DOLLAR
+          14.00
+22.08
+AUD 22.08 includes conversion commission of AUD            .64
+September9
+IPINFO.IO               SEATTLE
+UNITED STATES DOLLAR
+          99.00
+154.77
+AUD 154.77 includes conversion commission of AUD           4.51
+September10
+FILLOUT.COM             BEAVERTON
+UNITED STATES DOLLAR
+          89.00
+139.03
+AUD 139.03 includes conversion commission of AUD           4.05
+September10
+WEBFLOW.COM             SAN FRANCISCO
+UNITED STATES DOLLAR
+          19.80
+30.93
+AUD 30.93 includes conversion commission of AUD            .90
+September10
+REBRANDLY.COM           DUBLIN
+UNITED STATES DOLLAR
+          39.00
+60.92
+AUD 60.92 includes conversion commission of AUD           1.77
+September11
+WEBFLOW.COM             SAN FRANCISCO
+UNITED STATES DOLLAR
+          31.90
+49.86
+AUD 49.86 includes conversion commission of AUD           1.45
+September11
+ANTHROPIC: CLAUDE TEAM  SAN FRANCISCO
+173.13
+September11
+FILLOUT.COM             BEAVERTON
+UNITED STATES DOLLAR
+         100.00
+156.30
+AUD 156.30 includes conversion commission of AUD           4.55
+September13
+AIRTABLE.COM/BILL       SAN FRANCISCO
+UNITED STATES DOLLAR
+          54.00
+83.91
+AUD 83.91 includes conversion commission of AUD           2.44
+
+American Express Platinum Reserve Credit Card
+Statement of Account
+Prepared forMembership NumberDate
+MALCOLM LAURENCE RAMSAYxxxx-xxxxxx-32001September 16, 2025
+Page  6 of 7
+TRANSACTION DETAILS
+TRANSACTION DATETRANSACTION DETAILSFOREIGN SPENDAMOUNT ($)
+September14
+RETOOL PRO              SAN FRANCISCO
+UNITED STATES DOLLAR
+          50.00
+77.70
+AUD 77.70 includes conversion commission of AUD           2.26
+August20
+ADOBE Adobe Systems     SAGGART
+96.99
+August28
+SCRIBD INC**626454797   SAN FRANCISCO
+UNITED STATES DOLLAR
+           9.76
+15.45
+AUD 15.45 includes conversion commission of AUD            .45
+September1
+VULTR BY CONSTANT 00000 WEST PALM BEA
+UNITED STATES DOLLAR
+         226.27
+356.79
+AUD 356.79 includes conversion commission of AUD          10.39
+September1
+GOOGLE*GSUITE ACCEPTIFY CC GOOGLE.COM
+64.90
+September1
+INTL*ALIYUN.COM AlipayS SINGAPORE
+UNITED STATES DOLLAR
+            .65
+1.03
+AUD 1.03 includes conversion commission of AUD            .03
+September2
+AMAZON WEB SERVICES     SYDNEY
+2,482.47
+September4
+ADOBE Adobe Systems     SAGGART
+31.99
+September5
+ADOBE Adobe Systems     SAGGART
+76.99
+Total of New Standard Transactions forMALCOLM LAURENCE RAMSAY18,802.44
+
+American Express Platinum Reserve Credit Card
+Statement of Account
+Prepared forMembership NumberDate
+MALCOLM LAURENCE RAMSAYxxxx-xxxxxx-32001September 16, 2025
+Page  7 of 7
+Card Member Offers and Information
+Manage your account online
+Online Services provides you with the convenience of 24 hour access to your account details and online statements. Visit
+americanexpress.com.au/online to find out more and register.
+Need help with repayments?
+If you're struggling to meet your repayments, support is available. Call us on1300 660 562 — we're here to help.
+========== END OF PDF TEXT ==========
+
+
+Stats:
+Total length: 14457 chars
+Total lines: 518

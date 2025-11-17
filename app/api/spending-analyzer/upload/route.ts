@@ -260,7 +260,12 @@ async function learnStatementFormat(
     console.log(`[Format Learning] Learning new format for ${bank} (${statementType})`);
 
     // Ask AI to provide extraction instructions for this format
-    const firstPage = pdfText.substring(0, 3000);
+    // Find the transaction section in the PDF to show actual format
+    const transactionSectionStart = pdfText.indexOf('TRANSACTION DETAILS');
+    const rawSample = transactionSectionStart !== -1
+      ? pdfText.substring(transactionSectionStart, transactionSectionStart + 2000)
+      : pdfText.substring(0, 3000);
+
     const sampleTransactions = transactions.slice(0, 5);
 
     const completion = await openai.chat.completions.create({
@@ -274,21 +279,24 @@ async function learnStatementFormat(
           role: "user",
           content: `Analyze this ${bank} ${statementType} statement format and provide executable JavaScript code that can extract transactions WITHOUT using AI in the future.
 
-First page sample:
-${firstPage}
+CRITICAL: The PDF text is formatted with \\n newline characters. Transactions may span multiple lines. You MUST analyze the raw text format below to understand the line structure.
 
-Example transactions extracted:
+Raw PDF text sample (showing actual line breaks and format):
+${rawSample}
+
+Example transactions that should be extracted from the above:
 ${JSON.stringify(sampleTransactions.slice(0, 3), null, 2)}
 
 Provide:
-1. **formatDescription**: Brief human-readable description of the format
+1. **formatDescription**: Brief human-readable description of the format (mention if single-line or multi-line)
 2. **extractionCode**: Complete JavaScript function that takes PDF text and returns transactions array
 
 The extractionCode should be a complete function named 'extractTransactions' that:
-- Takes 'pdfText' as parameter
+- Takes 'pdfText' as parameter (the EXACT same format as shown in the raw sample above)
 - Returns array of {date: 'YYYY-MM-DD', merchant: string, amount: number, description: string}
+- Uses pdfText.split('\\n') to get lines, then processes them
+- Handles multi-line transactions if needed (look ahead to next lines for amounts/currency info)
 - Uses regex patterns and string manipulation (NO AI calls)
-- Handles this specific statement format
 - Includes comments explaining the logic
 
 Example format:
@@ -298,7 +306,8 @@ function extractTransactions(pdfText) {
   const lines = pdfText.split('\\n');
 
   // Your extraction logic here using regex, loops, etc.
-  // const datePattern = /^(Jan|Feb|Mar|...) \\d{1,2}/;
+  // For multi-line format, use lines[i], lines[i+1], lines[i+2] etc.
+  // const datePattern = /^(August|September) \\d{1,2}$/;
   // ...
 
   return transactions;
@@ -498,30 +507,35 @@ async function parsePDFWithVision(buffer: Buffer, fileName: string): Promise<{
 
     // New format OR saved instructions failed - use full AI extraction
     console.log(`[PDF Parser] Performing full AI extraction...`);
-    const aiTransactions = await extractTransactionsWithAI(pdfText);
+    const aiResult = await extractTransactionsWithAI(pdfText);
 
-    if (aiTransactions.length > 0) {
-      console.log(`[PDF Parser] ✓ Extracted ${aiTransactions.length} transactions with AI`);
+    if (aiResult.transactions.length > 0) {
+      console.log(`[PDF Parser] ✓ Extracted ${aiResult.transactions.length} transactions with AI`);
 
       // Enhance with merchant cache
-      const enhanced = await enhanceTransactionsWithAI(aiTransactions);
+      const enhanced = await enhanceTransactionsWithAI(aiResult.transactions);
 
-      // Learn this format for future use (only pay for analysis once!)
-      if (bank !== 'Unknown' && !existingFormat) {
-        const formatId = await learnStatementFormat(
-          bank,
-          statementType,
-          pdfText,
-          fingerprint,
-          enhanced
-        );
+      // Save the extraction code if we got it and don't have an existing format
+      if (bank !== 'Unknown' && !existingFormat && aiResult.extractionCode) {
+        console.log(`[PDF Parser] Saving extraction code from AI response...`);
+        const statementFormat = await prisma.statementFormat.create({
+          data: {
+            bankName: bank,
+            statementType: statementType,
+            formatFingerprint: fingerprint,
+            extractionCode: aiResult.extractionCode,
+            formatDescription: aiResult.formatDescription || 'AI-generated extraction code',
+            sampleFirstPage: pdfText.substring(0, 3000),
+            sampleTransactions: enhanced.slice(0, 5),
+          },
+        });
 
         return {
           transactions: enhanced,
           bankName: bank,
           statementType,
           extractionMethod: 'first_time_ai_with_learning',
-          formatId: formatId || undefined,
+          formatId: statementFormat.id,
           formatFingerprint: fingerprint,
         };
       }
@@ -924,27 +938,41 @@ async function extractTransactionsWithCode(
   statementType: string
 ): Promise<any[]> {
   console.log(`[Code Execution] Running learned extraction code for ${bank}...`);
+  console.log(`[Code Execution] PDF text length: ${pdfText.length} chars`);
+  console.log(`[Code Execution] PDF text sample (first 500 chars):`);
+  console.log(pdfText.substring(0, 500));
+  console.log(`[Code Execution] PDF text sample (lines 1-20):`);
+  console.log(pdfText.split('\n').slice(0, 20).join('\n'));
 
   try {
     // Execute the function code and call it in one step
+    console.log(`[Code Execution] Executing code...`);
     const transactions = eval(`${extractionCode}; extractTransactions(pdfText);`);
 
+    console.log(`[Code Execution] Eval returned type: ${typeof transactions}`);
+    console.log(`[Code Execution] Is array: ${Array.isArray(transactions)}`);
+    console.log(`[Code Execution] Result:`, transactions);
+
     if (!Array.isArray(transactions)) {
-      console.error(`[Code Execution] Function did not return an array`);
+      console.error(`[Code Execution] Function did not return an array, got: ${typeof transactions}`);
       return [];
     }
 
     console.log(`[Code Execution] ✓ Extracted ${transactions.length} transactions WITHOUT AI!`);
+    if (transactions.length > 0) {
+      console.log(`[Code Execution] Sample transaction:`, transactions[0]);
+    }
     return transactions;
   } catch (error) {
     console.error("[Code Execution] Error executing learned code:", error);
-    console.error("[Code Execution] Full error:", error);
+    console.error("[Code Execution] Error message:", (error as Error).message);
+    console.error("[Code Execution] Error stack:", (error as Error).stack);
     // Fallback to AI if code execution fails
     return [];
   }
 }
 
-async function extractTransactionsWithAI(pdfText: string): Promise<any[]> {
+async function extractTransactionsWithAI(pdfText: string): Promise<{ transactions: any[]; extractionCode?: string; formatDescription?: string }> {
   // Truncate if too large
   let text = pdfText;
   if (text.length > 30000) {
@@ -960,28 +988,34 @@ async function extractTransactionsWithAI(pdfText: string): Promise<any[]> {
       messages: [
         {
           role: "system",
-          content: "You are a financial document analyzer. Extract ONLY REAL transactions from the provided bank statement text. DO NOT make up or hallucinate any transactions."
+          content: "You are a financial document analyzer expert at both extracting transactions AND creating reusable JavaScript extraction code."
         },
         {
           role: "user",
-          content: `Extract ALL transactions from this bank statement. For each transaction, provide:
-          1. date (in YYYY-MM-DD format)
-          2. description (exact text from statement)
-          3. amount (negative for debits/expenses, positive for credits/income)
-          4. merchant (clean merchant name extracted from description)
+          content: `Analyze this bank statement text and:
+1. Extract ALL transactions as JSON
+2. Write JavaScript code that can extract transactions from this same format in the future
 
-          Important:
-          - Convert DD/MM/YYYY or DD-MM-YYYY dates to YYYY-MM-DD
-          - Accept dates in 2024 and 2025
-          - Include ALL visible transactions
-          - Debit/expense amounts should be negative
-          - Credit/income amounts should be positive
-          - Extract clean merchant names (e.g., "AMEX*WEBFLOW" → "Webflow")
+Bank statement text:
+${text}
 
-          Return as JSON: {"transactions": [{"date": "YYYY-MM-DD", "description": "...", "amount": -00.00, "merchant": "..."}]}
+The extraction code should:
+- Be a function named 'extractTransactions' that takes pdfText parameter
+- Split text by \\n and iterate through lines
+- Handle the specific format of THIS statement (could be single-line or multi-line transactions)
+- Return array: [{date: 'YYYY-MM-DD', merchant: string, amount: number, description: string}]
 
-          Bank statement text:
-          ${text}`
+Return JSON:
+{
+  "transactions": [/* all transactions */],
+  "extractionCode": "function extractTransactions(pdfText) { ... }",
+  "formatDescription": "brief description"
+}
+
+Important:
+- Extract ALL transactions (typically 50-200+)
+- Negative amounts = expenses, positive = income
+- Parse dates to YYYY-MM-DD format`
         }
       ],
       response_format: { type: "json_object" },
@@ -996,11 +1030,18 @@ async function extractTransactionsWithAI(pdfText: string): Promise<any[]> {
 
     const parsed = JSON.parse(response);
     const transactions = parsed.transactions || [];
+    const extractionCode = parsed.extractionCode;
+    const formatDescription = parsed.formatDescription;
+
     console.log(`[AI Extraction] Extracted ${transactions.length} transactions`);
-    return transactions;
+    if (extractionCode) {
+      console.log(`[AI Extraction] Also received extraction code (${extractionCode.length} chars)`);
+    }
+
+    return { transactions, extractionCode, formatDescription };
   } catch (error) {
     console.error("[AI Extraction] Error:", error);
-    return [];
+    return { transactions: [] };
   }
 }
 
