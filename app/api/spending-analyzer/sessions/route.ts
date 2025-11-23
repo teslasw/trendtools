@@ -1,53 +1,65 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/lib/supabase/server";
+import { getDb } from "@/lib/db";
 
 // GET - List all saved sessions for the user
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const supabase = await createClient();
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
 
-    if (!session?.user?.email) {
+    if (authError || !authUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
+    const db = await getDb();
+    const { data: user, error: userError } = await db
+      .from("User")
+      .select("*")
+      .eq("id", authUser.id)
+      .single();
 
-    if (!user) {
+    if (userError || !user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Get all analysis sessions for the user
-    const analyses = await prisma.spendingAnalysis.findMany({
-      where: {
-        userId: user.id,
-      },
-      include: {
-        statements: {
-          include: {
-            transactions: {
-              select: {
-                amount: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+    const { data: analyses, error: analysesError } = await db
+      .from("SpendingAnalysis")
+      .select(
+        `
+        id,
+        name,
+        createdAt,
+        updatedAt,
+        viewedAt,
+        status,
+        BankStatement(
+          id,
+          Transaction(
+            amount
+          )
+        )
+        `
+      )
+      .eq("userId", user.id)
+      .order("createdAt", { ascending: false });
+
+    if (analysesError) {
+      console.error("Get analyses error:", analysesError);
+      return NextResponse.json(
+        { error: "Failed to fetch sessions" },
+        { status: 500 }
+      );
+    }
 
     // Format the response
-    const formattedAnalyses = analyses.map((analysis) => {
+    const formattedAnalyses = (analyses || []).map((analysis: any) => {
       let totalAmount = 0;
       let transactionCount = 0;
 
-      analysis.statements.forEach(statement => {
-        statement.transactions.forEach(transaction => {
+      (analysis.BankStatement || []).forEach((statement: any) => {
+        (statement.Transaction || []).forEach((transaction: any) => {
           totalAmount += Math.abs(Number(transaction.amount));
           transactionCount++;
         });
@@ -78,17 +90,21 @@ export async function GET(req: NextRequest) {
 // POST - Save a new analysis session
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const supabase = await createClient();
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
 
-    if (!session?.user?.email) {
+    if (authError || !authUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
+    const db = await getDb();
+    const { data: user, error: userError } = await db
+      .from("User")
+      .select("*")
+      .eq("id", authUser.id)
+      .single();
 
-    if (!user) {
+    if (userError || !user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
@@ -102,29 +118,55 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if analysis already exists
-    let analysis = await prisma.spendingAnalysis.findUnique({
-      where: { id: analysisId },
-    });
+    const { data: existingAnalysis, error: checkError } = await db
+      .from("SpendingAnalysis")
+      .select("*")
+      .eq("id", analysisId)
+      .single();
 
-    if (!analysis) {
-      // Create new analysis
-      analysis = await prisma.spendingAnalysis.create({
-        data: {
+    let analysis;
+    let error;
+
+    if (checkError && checkError.code === "PGRST116") {
+      // Not found - create new analysis
+      const { data: newAnalysis, error: createError } = await db
+        .from("SpendingAnalysis")
+        .insert({
           id: analysisId,
           userId: user.id,
           name: analysisName,
           status: "processing",
-        },
-      });
-    } else {
-      // Update existing analysis
-      analysis = await prisma.spendingAnalysis.update({
-        where: { id: analysisId },
-        data: {
+        })
+        .select()
+        .single();
+
+      analysis = newAnalysis;
+      error = createError;
+    } else if (!checkError && existingAnalysis) {
+      // Found - update existing analysis
+      const { data: updatedAnalysis, error: updateError } = await db
+        .from("SpendingAnalysis")
+        .update({
           name: analysisName,
           status: "completed",
-        },
-      });
+        })
+        .eq("id", analysisId)
+        .select()
+        .single();
+
+      analysis = updatedAnalysis;
+      error = updateError;
+    } else {
+      // Unexpected error checking analysis
+      error = checkError;
+    }
+
+    if (error) {
+      console.error("Save session error:", error);
+      return NextResponse.json(
+        { error: "Failed to save session" },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
@@ -145,17 +187,21 @@ export async function POST(req: NextRequest) {
 // DELETE - Delete an analysis session
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const supabase = await createClient();
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
 
-    if (!session?.user?.email) {
+    if (authError || !authUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
+    const db = await getDb();
+    const { data: user, error: userError } = await db
+      .from("User")
+      .select("*")
+      .eq("id", authUser.id)
+      .single();
 
-    if (!user) {
+    if (userError || !user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
@@ -170,24 +216,33 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Verify analysis belongs to user
-    const analysis = await prisma.spendingAnalysis.findFirst({
-      where: {
-        id: analysisId,
-        userId: user.id,
-      },
-    });
+    const { data: analysis, error: findError } = await db
+      .from("SpendingAnalysis")
+      .select("*")
+      .eq("id", analysisId)
+      .eq("userId", user.id)
+      .single();
 
-    if (!analysis) {
+    if (findError || !analysis) {
       return NextResponse.json(
         { error: "Analysis not found" },
         { status: 404 }
       );
     }
 
-    // Delete analysis and all related data (cascading delete)
-    await prisma.spendingAnalysis.delete({
-      where: { id: analysisId },
-    });
+    // Delete analysis and all related data (cascading delete handled by database)
+    const { error: deleteError } = await db
+      .from("SpendingAnalysis")
+      .delete()
+      .eq("id", analysisId);
+
+    if (deleteError) {
+      console.error("Delete session error:", deleteError);
+      return NextResponse.json(
+        { error: "Failed to delete session" },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       message: "Session deleted successfully",

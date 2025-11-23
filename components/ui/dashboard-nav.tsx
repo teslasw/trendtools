@@ -24,8 +24,10 @@ import {
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut, useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
+import { useUser } from "@/lib/hooks/use-user";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
@@ -158,10 +160,17 @@ export const DashboardNav = () => {
   const [open, setOpen] = useState(false);
   const [submenu, setSubmenu] = useState<"tools" | null>(null);
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const { user, loading } = useUser();
   const { theme, setTheme } = useTheme();
+  const router = useRouter();
+  const supabase = createClient();
 
-  const isAdmin = session?.user && (session.user as any).role === "ADMIN";
+  const isAdmin = user?.role === "ADMIN";
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push("/auth/signin");
+  };
 
   const mainNavigation = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
@@ -176,10 +185,6 @@ export const DashboardNav = () => {
     { name: "Groups", href: "/admin/groups", icon: Users },
     { name: "Settings", href: "/admin/settings", icon: Settings },
   ];
-
-  const handleSignOut = async () => {
-    await signOut({ callbackUrl: "/" });
-  };
 
   return (
     <section className="inset-x-0 top-0 z-20 w-full">
@@ -303,7 +308,7 @@ export const DashboardNav = () => {
                       <User className="h-4 w-4 text-white" />
                     </div>
                     <span className="hidden sm:inline-block text-white">
-                      {session?.user?.name || session?.user?.email?.split('@')[0] || 'User'}
+                      {user?.name || user?.email?.split('@')[0] || 'User'}
                     </span>
                     <ChevronDown className="h-4 w-4 text-white" />
                   </Button>
@@ -312,10 +317,10 @@ export const DashboardNav = () => {
                   <DropdownMenuLabel>
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">
-                        {session?.user?.name || 'User'}
+                        {user?.name || 'User'}
                       </p>
                       <p className="text-xs leading-none text-muted-foreground">
-                        {session?.user?.email}
+                        {user?.email}
                       </p>
                     </div>
                   </DropdownMenuLabel>
@@ -456,10 +461,10 @@ export const DashboardNav = () => {
                 </Button>
                 <div className="text-center">
                   <p className="text-sm font-medium">
-                    {session?.user?.name || session?.user?.email}
+                    {user?.name || user?.email}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {(session?.user as any)?.role || "Customer"}
+                    {user?.role || "Customer"}
                   </p>
                 </div>
                 <Button

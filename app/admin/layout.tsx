@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut, useSession } from "next-auth/react";
+import { useUser } from "@/lib/hooks/use-user";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
@@ -51,7 +51,7 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const { user } = useUser();
 
   const adminNavigation = [
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
@@ -131,10 +131,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                     </div>
                     <div className="grid flex-1 text-left text-sm leading-tight">
                       <span className="truncate font-semibold">
-                        {session?.user?.name || "Admin User"}
+                        {user?.name || "Admin User"}
                       </span>
                       <span className="truncate text-xs">
-                        {session?.user?.email || "Administrator"}
+                        {user?.email || "Administrator"}
                       </span>
                     </div>
                     <ChevronsUpDown className="ml-auto size-4" />
@@ -153,10 +153,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                       </div>
                       <div className="grid flex-1 text-left text-sm leading-tight">
                         <span className="truncate font-semibold">
-                          {session?.user?.name || "Admin User"}
+                          {user?.name || "Admin User"}
                         </span>
                         <span className="truncate text-xs">
-                          {session?.user?.email || "Administrator"}
+                          {user?.email || "Administrator"}
                         </span>
                       </div>
                     </div>

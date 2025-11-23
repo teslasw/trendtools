@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useUser } from "@/lib/hooks/use-user";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdvisorContactButton } from "@/components/advisor-contact";
 import { Badge } from "@/components/ui/badge";
@@ -16,8 +16,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { Calculator, DollarSign, TrendingUp, Info, Calendar, Percent, PiggyBank, CheckCircle, Clock, Star } from "lucide-react";
 
 export default function SuperCalculatorPage() {
-  const { data: session } = useSession();
-  const advisor = (session?.user as any)?.advisor;
+  const { user } = useUser();
+  const advisor = (user)?.advisor;
   
   // Form state
   const [currentAge, setCurrentAge] = useState("30");

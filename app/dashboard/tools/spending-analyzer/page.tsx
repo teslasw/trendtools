@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useUser } from "@/lib/hooks/use-user";
 import { FileUploadZone } from "./components/FileUploadZone";
 import { TransactionTable, type Transaction } from "./components/TransactionTable";
 import { SpendingDashboard } from "./components/SpendingDashboard";
@@ -62,8 +62,8 @@ interface SavedSession {
 }
 
 export default function SpendingAnalyzerPage() {
-  const { data: session } = useSession();
-  const advisor = (session?.user as any)?.advisor;
+  const { user } = useUser();
+  const advisor = (user)?.advisor;
   const [sessionName, setSessionName] = useState("");
   const [isSessionStarted, setIsSessionStarted] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -79,7 +79,7 @@ export default function SpendingAnalyzerPage() {
   const [connectionStatus, setConnectionStatus] = useState<string | null>(null);
 
   // Check if user is a client (not in Free Users group)
-  const userGroups = (session?.user as any)?.groups || [];
+  const userGroups = (user)?.groups || [];
   const isClient = !userGroups.includes("Free Users") && userGroups.length > 0;
   const isPremiumClient = userGroups.includes("Premium Advisory Clients");
 

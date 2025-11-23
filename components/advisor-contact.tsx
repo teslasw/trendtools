@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useSession } from "next-auth/react";
+import { useUser } from "@/lib/hooks/use-user";
 import {
   Dialog,
   DialogContent,
@@ -40,7 +40,7 @@ interface AdvisorContactProps {
 }
 
 export function AdvisorContactDialog({ open, onOpenChange, context }: AdvisorContactProps) {
-  const { data: session } = useSession();
+  const { user } = useUser();
   const [contactMethod, setContactMethod] = useState("message");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
@@ -49,10 +49,10 @@ export function AdvisorContactDialog({ open, onOpenChange, context }: AdvisorCon
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   // Check if user is a client
-  const userGroups = (session?.user as any)?.groups || [];
+  const userGroups = (user)?.groups || [];
   const isClient = !userGroups.includes("Free Users") && userGroups.length > 0;
-  const advisorId = (session?.user as any)?.advisorId;
-  const userName = session?.user?.name || "Client";
+  const advisorId = (user)?.advisorId;
+  const userName = user?.name || "Client";
 
   const handleSubmit = async () => {
     if (!isClient) return;
@@ -340,10 +340,10 @@ export function AdvisorContactButton({
   size = "default",
   className 
 }: AdvisorContactButtonProps) {
-  const { data: session } = useSession();
+  const { user } = useUser();
   const [dialogOpen, setDialogOpen] = useState(false);
   
-  const advisor = (session?.user as any)?.advisor;
+  const advisor = (user)?.advisor;
 
   return (
     <>

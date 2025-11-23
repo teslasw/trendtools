@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import {
   Card,
@@ -42,10 +43,11 @@ interface Session {
 }
 
 interface SessionsDashboardProps {
-  onViewSession: (sessionId: string) => void;
+  onViewSession?: (sessionId: string) => void; // Make optional since we're using router now
 }
 
 export function SessionsDashboard({ onViewSession }: SessionsDashboardProps) {
+  const router = useRouter();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -194,6 +196,11 @@ export function SessionsDashboard({ onViewSession }: SessionsDashboardProps) {
     );
   };
 
+  const handleViewSession = (sessionId: string) => {
+    // Navigate to the session view page with the ID in the URL
+    router.push(`/dashboard/tools/spending-analyzer/${sessionId}`);
+  };
+
   const getActionButton = (session: Session) => {
     if (session.status === "processing") {
       return (
@@ -209,7 +216,7 @@ export function SessionsDashboard({ onViewSession }: SessionsDashboardProps) {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => onViewSession(session.id)}
+          onClick={() => handleViewSession(session.id)}
         >
           <Eye className="h-4 w-4 mr-1" />
           {session.viewedAt ? "View Again" : "View"}

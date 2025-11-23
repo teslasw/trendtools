@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { getDb, generateId } from "@/lib/db";
 import OpenAI from "openai";
 
 const openai = new OpenAI({
@@ -28,9 +26,10 @@ const CATEGORIES = [
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const db = await getDb();
+    const { data: { user: authUser }, error: authError } = await db.auth.getUser();
 
-    if (!session?.user?.email) {
+    if (authError || !authUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -40,27 +39,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Analysis ID required" }, { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
+    const { data: user, error: userError } = await db
+      .from("User")
+      .select("*")
+      .eq("id", authUser.id)
+      .single();
 
-    if (!user) {
+    if (userError || !user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Get uncategorized transactions
-    const transactions = await prisma.transaction.findMany({
-      where: {
-        userId: user.id,
-        categoryId: null,
-      },
-      orderBy: {
-        date: "desc",
-      },
-      take: 100, // Process in batches
-    });
+    const { data: transactions, error: txnError } = await db
+      .from("Transaction")
+      .select("*")
+      .eq("userId", user.id)
+      .is("categoryId", null)
+      .order("date", { ascending: false })
+      .limit(100); // Process in batches
 
-    if (!transactions.length) {
+    if (txnError) {
+      throw txnError;
+    }
+
+    if (!transactions || !transactions.length) {
       return NextResponse.json({
         message: "No transactions to categorize",
         categorized: 0,
@@ -72,7 +74,7 @@ export async function POST(req: NextRequest) {
       id: t.id,
       description: t.description,
       merchant: t.merchant,
-      amount: t.amount.toNumber(),
+      amount: t.amount,
     }));
 
     // Call OpenAI for categorization
@@ -120,35 +122,50 @@ export async function POST(req: NextRequest) {
       if (!transaction) continue;
 
       // Get or create category
-      let category = await prisma.category.findFirst({
-        where: {
-          name: {
-            equals: catTxn.category,
-            mode: "insensitive",
-          },
-        },
-      });
+      const { data: existingCategory } = await db
+        .from("Category")
+        .select("*")
+        .ilike("name", catTxn.category)
+        .single();
 
-      if (!category) {
-        category = await prisma.category.create({
-          data: {
+      let categoryId: string;
+
+      if (existingCategory) {
+        categoryId = existingCategory.id;
+      } else {
+        const { data: newCategory, error: catError } = await db
+          .from("Category")
+          .insert({
+            id: generateId(),
             name: catTxn.category,
             color: getCategoryColor(catTxn.category),
             icon: getCategoryIcon(catTxn.category),
-          },
-        });
+          })
+          .select()
+          .single();
+
+        if (catError || !newCategory) {
+          console.error("Error creating category:", catError);
+          continue;
+        }
+        categoryId = newCategory.id;
       }
 
       // Update transaction
-      await prisma.transaction.update({
-        where: { id: transaction.id },
-        data: {
-          categoryId: category.id,
+      const { error: updateError } = await db
+        .from("Transaction")
+        .update({
+          categoryId: categoryId,
           aiConfidence: catTxn.confidence,
           status: catTxn.suggestedAction,
           notes: catTxn.insights,
-        },
-      });
+          updatedAt: new Date().toISOString(),
+        })
+        .eq("id", transaction.id);
+
+      if (updateError) {
+        console.error("Error updating transaction:", updateError);
+      }
     }
 
     // Generate spending insights
@@ -169,6 +186,7 @@ export async function POST(req: NextRequest) {
 }
 
 async function generateInsights(analysisId: string, transactions: any[]) {
+  const db = await getDb();
   const insights = [];
 
   // Calculate spending patterns
@@ -178,14 +196,14 @@ async function generateInsights(analysisId: string, transactions: any[]) {
   for (const txn of transactions) {
     if (txn.category) {
       categoryTotals[txn.category.name] =
-        (categoryTotals[txn.category.name] || 0) + Math.abs(txn.amount.toNumber());
+        (categoryTotals[txn.category.name] || 0) + Math.abs(txn.amount);
     }
 
     // Simple recurring detection (would be enhanced with AI)
     const similar = transactions.filter(t =>
       t.id !== txn.id &&
       t.merchant === txn.merchant &&
-      Math.abs(t.amount.toNumber() - txn.amount.toNumber()) < 1
+      Math.abs(t.amount - txn.amount) < 1
     );
 
     if (similar.length > 0) {
@@ -198,8 +216,10 @@ async function generateInsights(analysisId: string, transactions: any[]) {
     const topCategory = Object.entries(categoryTotals)
       .sort(([, a], [, b]) => b - a)[0];
 
-    const insight = await prisma.spendingInsight.create({
-      data: {
+    const { data: insight, error } = await db
+      .from("SpendingInsight")
+      .insert({
+        id: generateId(),
         analysisId,
         type: "category_breakdown",
         data: {
@@ -208,19 +228,25 @@ async function generateInsights(analysisId: string, transactions: any[]) {
           categoryBreakdown: categoryTotals,
         },
         period: "month",
-      },
-    });
-    insights.push(insight);
+      })
+      .select()
+      .single();
+
+    if (!error && insight) {
+      insights.push(insight);
+    }
   }
 
   if (recurringTransactions.length > 0) {
     const recurringTotal = recurringTransactions.reduce(
-      (sum, t) => sum + Math.abs(t.amount.toNumber()),
+      (sum, t) => sum + Math.abs(t.amount),
       0
     );
 
-    const insight = await prisma.spendingInsight.create({
-      data: {
+    const { data: insight, error } = await db
+      .from("SpendingInsight")
+      .insert({
+        id: generateId(),
         analysisId,
         type: "subscription",
         data: {
@@ -228,25 +254,31 @@ async function generateInsights(analysisId: string, transactions: any[]) {
           totalAmount: recurringTotal,
           transactions: recurringTransactions.map(t => ({
             description: t.description,
-            amount: t.amount.toNumber(),
+            amount: t.amount,
           })),
         },
         period: "month",
-      },
-    });
-    insights.push(insight);
+      })
+      .select()
+      .single();
+
+    if (!error && insight) {
+      insights.push(insight);
+    }
   }
 
   // Savings opportunity
   const cancelTransactions = transactions.filter(t => t.status === "CANCEL");
   if (cancelTransactions.length > 0) {
     const savingsAmount = cancelTransactions.reduce(
-      (sum, t) => sum + Math.abs(t.amount.toNumber()),
+      (sum, t) => sum + Math.abs(t.amount),
       0
     );
 
-    const insight = await prisma.spendingInsight.create({
-      data: {
+    const { data: insight, error } = await db
+      .from("SpendingInsight")
+      .insert({
+        id: generateId(),
         analysisId,
         type: "savings_opportunity",
         data: {
@@ -254,9 +286,13 @@ async function generateInsights(analysisId: string, transactions: any[]) {
           transactionCount: cancelTransactions.length,
           categories: [...new Set(cancelTransactions.map(t => t.category?.name || "Other"))],
         },
-      },
-    });
-    insights.push(insight);
+      })
+      .select()
+      .single();
+
+    if (!error && insight) {
+      insights.push(insight);
+    }
   }
 
   return insights;

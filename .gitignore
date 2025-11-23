@@ -204,3 +204,6 @@ fresh.gen.ts
 
 # Plasmic
 .plasmic
+# Logs
+logs/
+*.log

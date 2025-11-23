@@ -1,67 +1,62 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { getDb } from "@/lib/db";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const db = await getDb();
+    const { data: { user: authUser }, error: authError } = await db.auth.getUser();
 
-    if (!session?.user?.email) {
+    if (authError || !authUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
+    const { data: user, error: userError } = await db
+      .from("User")
+      .select("*")
+      .eq("id", authUser.id)
+      .single();
 
-    if (!user) {
+    if (userError || !user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     const searchParams = req.nextUrl.searchParams;
     const analysisId = searchParams.get("analysisId");
 
-    let whereClause: any = {
-      userId: user.id,
-    };
+    let query = db
+      .from("Transaction")
+      .select(`
+        *,
+        category:Category(*),
+        bankStatement:BankStatement(*)
+      `)
+      .eq("userId", user.id)
+      .order("date", { ascending: false });
 
     // If analysisId provided, find transactions through the BankStatement relationship
     if (analysisId) {
-      const bankStatements = await prisma.bankStatement.findMany({
-        where: {
-          userId: user.id,
-          analysisId: analysisId,
-        },
-        select: {
-          id: true,
-        },
-      });
+      const { data: bankStatements, error: bsError } = await db
+        .from("BankStatement")
+        .select("id")
+        .eq("userId", user.id)
+        .eq("analysisId", analysisId);
 
-      const bankStatementIds = bankStatements.map(bs => bs.id);
-
-      if (bankStatementIds.length > 0) {
-        whereClause.bankStatementId = {
-          in: bankStatementIds,
-        };
-      } else {
+      if (bsError || !bankStatements || bankStatements.length === 0) {
         // No bank statements found for this analysis, return empty
         return NextResponse.json([]);
       }
+
+      const bankStatementIds = bankStatements.map(bs => bs.id);
+      query = query.in("bankStatementId", bankStatementIds);
     }
 
-    const transactions = await prisma.transaction.findMany({
-      where: whereClause,
-      include: {
-        category: true,
-        bankStatement: true,
-      },
-      orderBy: {
-        date: "desc",
-      },
-    });
+    const { data: transactions, error: txnError } = await query;
 
-    return NextResponse.json(transactions);
+    if (txnError) {
+      throw txnError;
+    }
+
+    return NextResponse.json(transactions || []);
   } catch (error) {
     console.error("Get transactions error:", error);
     return NextResponse.json(
@@ -73,17 +68,20 @@ export async function GET(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const db = await getDb();
+    const { data: { user: authUser }, error: authError } = await db.auth.getUser();
 
-    if (!session?.user?.email) {
+    if (authError || !authUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
+    const { data: user, error: userError } = await db
+      .from("User")
+      .select("*")
+      .eq("id", authUser.id)
+      .single();
 
-    if (!user) {
+    if (userError || !user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
@@ -97,14 +95,14 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Verify transaction belongs to user
-    const transaction = await prisma.transaction.findFirst({
-      where: {
-        id: transactionId,
-        userId: user.id,
-      },
-    });
+    const { data: transaction, error: txnError } = await db
+      .from("Transaction")
+      .select("*")
+      .eq("id", transactionId)
+      .eq("userId", user.id)
+      .single();
 
-    if (!transaction) {
+    if (txnError || !transaction) {
       return NextResponse.json(
         { error: "Transaction not found" },
         { status: 404 }
@@ -118,36 +116,54 @@ export async function PATCH(req: NextRequest) {
       // Check if it's a category name (not a cuid)
       if (!updates.categoryId.startsWith('c')) {
         // It's a category name, find or create it
-        let category = await prisma.category.findUnique({
-          where: { name: updates.categoryId },
-        });
+        const { data: existingCategory } = await db
+          .from("Category")
+          .select("*")
+          .eq("name", updates.categoryId)
+          .single();
 
-        if (!category) {
-          category = await prisma.category.create({
-            data: {
+        if (existingCategory) {
+          categoryId = existingCategory.id;
+        } else {
+          // Create new category
+          const { generateId } = await import("@/lib/db");
+          const { data: newCategory, error: catError } = await db
+            .from("Category")
+            .insert({
+              id: generateId(),
               name: updates.categoryId,
               isSystem: false,
-            },
-          });
-          console.log(`[Transaction Update] Created new category: ${updates.categoryId}`);
-        }
+            })
+            .select()
+            .single();
 
-        categoryId = category.id;
+          if (!catError && newCategory) {
+            categoryId = newCategory.id;
+            console.log(`[Transaction Update] Created new category: ${updates.categoryId}`);
+          }
+        }
       }
     }
 
     // Update transaction
-    const updated = await prisma.transaction.update({
-      where: { id: transactionId },
-      data: {
+    const { data: updated, error: updateError } = await db
+      .from("Transaction")
+      .update({
         status: updates.status,
         notes: updates.notes,
         categoryId: categoryId,
-      },
-      include: {
-        category: true,
-      },
-    });
+        updatedAt: new Date().toISOString(),
+      })
+      .eq("id", transactionId)
+      .select(`
+        *,
+        category:Category(*)
+      `)
+      .single();
+
+    if (updateError) {
+      throw updateError;
+    }
 
     return NextResponse.json(updated);
   } catch (error) {
@@ -161,17 +177,20 @@ export async function PATCH(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const db = await getDb();
+    const { data: { user: authUser }, error: authError } = await db.auth.getUser();
 
-    if (!session?.user?.email) {
+    if (authError || !authUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
+    const { data: user, error: userError } = await db
+      .from("User")
+      .select("*")
+      .eq("id", authUser.id)
+      .single();
 
-    if (!user) {
+    if (userError || !user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
@@ -192,14 +211,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify all transactions belong to user
-    const transactions = await prisma.transaction.findMany({
-      where: {
-        id: { in: transactionIds },
-        userId: user.id,
-      },
-    });
+    const { data: transactions, error: txnError } = await db
+      .from("Transaction")
+      .select("id")
+      .in("id", transactionIds)
+      .eq("userId", user.id);
 
-    if (transactions.length !== transactionIds.length) {
+    if (txnError || !transactions || transactions.length !== transactionIds.length) {
       return NextResponse.json(
         { error: "Some transactions not found" },
         { status: 404 }
@@ -207,15 +225,18 @@ export async function POST(req: NextRequest) {
     }
 
     // Bulk update
-    await prisma.transaction.updateMany({
-      where: {
-        id: { in: transactionIds },
-        userId: user.id,
-      },
-      data: {
+    const { error: updateError } = await db
+      .from("Transaction")
+      .update({
         status,
-      },
-    });
+        updatedAt: new Date().toISOString(),
+      })
+      .in("id", transactionIds)
+      .eq("userId", user.id);
+
+    if (updateError) {
+      throw updateError;
+    }
 
     return NextResponse.json({
       updated: transactionIds.length,

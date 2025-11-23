@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "./auth";
+import { createClient } from "./supabase/server";
 import jwt from "jsonwebtoken";
-import { prisma } from "./prisma";
+import { getDb } from "./db";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production";
 
@@ -58,23 +57,35 @@ export function verifyApiToken(token: string): ApiUser | null {
 
 /**
  * API authentication middleware
- * Supports both NextAuth session (web) and JWT tokens (mobile)
+ * Supports both Supabase Auth session (web) and JWT tokens (mobile)
  */
 export async function authenticateApi(
   request: NextRequest
 ): Promise<{ user: ApiUser | null; error?: string }> {
-  // First, try to get NextAuth session (for web app)
-  const session = await getServerSession(authOptions);
-  if (session?.user) {
-    return {
-      user: {
-        id: (session.user as any).id,
-        email: session.user.email!,
-        role: (session.user as any).role,
-        firstName: session.user.name?.split(" ")[0],
-        lastName: session.user.name?.split(" ")[1],
-      },
-    };
+  // First, try to get Supabase Auth session (for web app)
+  const supabase = await createClient();
+  const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+
+  if (!authError && authUser) {
+    // Get user from database to get role and other details
+    const db = await getDb();
+    const { data: dbUser, error: dbError } = await db
+      .from("User")
+      .select("id, email, role, status, firstName, lastName")
+      .eq("id", authUser.id)
+      .single();
+
+    if (!dbError && dbUser && dbUser.status !== "SUSPENDED") {
+      return {
+        user: {
+          id: dbUser.id,
+          email: dbUser.email,
+          role: dbUser.role,
+          firstName: dbUser.firstName || undefined,
+          lastName: dbUser.lastName || undefined,
+        },
+      };
+    }
   }
 
   // If no session, check for Bearer token (for mobile/API)
@@ -91,19 +102,14 @@ export async function authenticateApi(
   }
 
   // Verify user still exists and is active
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: {
-      id: true,
-      email: true,
-      role: true,
-      status: true,
-      firstName: true,
-      lastName: true
-    },
-  });
+  const db = await getDb();
+  const { data: dbUser, error: dbError } = await db
+    .from("User")
+    .select("id, email, role, status, firstName, lastName")
+    .eq("id", user.id)
+    .single();
 
-  if (!dbUser || dbUser.status === "SUSPENDED") {
+  if (dbError || !dbUser || dbUser.status === "SUSPENDED") {
     return { user: null, error: "User account is not active" };
   }
 

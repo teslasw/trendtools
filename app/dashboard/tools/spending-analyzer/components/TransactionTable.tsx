@@ -26,6 +26,7 @@ import {
   ShoppingBag,
   Repeat,
   StickyNote,
+  MapPin,
 } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
 
@@ -40,8 +41,13 @@ export interface Transaction {
   notes?: string;
   isRecurring?: boolean;
   aiConfidence?: number;
+  businessName?: string;
   merchantType?: string;
+  location?: string;
   merchantDescription?: string;
+  rawMerchant?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 interface TransactionTableProps {
@@ -198,25 +204,42 @@ export function TransactionTable({
                 </TableCell>
                 <TableCell>
                   <div className="space-y-1">
-                    <p className="text-sm font-medium">{transaction.description}</p>
-                    {transaction.merchant && (
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-xs text-muted-foreground">{transaction.merchant}</p>
-                        {transaction.merchantType && (
-                          <Badge variant="outline" className="text-xs h-5 px-1.5 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800">
-                            {transaction.merchantType}
-                          </Badge>
-                        )}
+                    {/* Line 1: Business Name + Merchant Type Badge (or merchant if not enhanced) */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-medium">
+                        {transaction.businessName || transaction.merchant || transaction.description}
+                      </p>
+                      {transaction.merchantType && (
+                        <Badge variant="outline" className="text-xs h-5 px-1.5 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800">
+                          {transaction.merchantType}
+                        </Badge>
+                      )}
+                      {transaction.isRecurring && (
+                        <Badge variant="secondary" className="text-xs">
+                          <Repeat className="h-3 w-3 mr-1" />
+                          Recurring
+                        </Badge>
+                      )}
+                    </div>
+
+                    {/* Line 2: Location */}
+                    {transaction.location && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <MapPin className="h-3 w-3" />
+                        <span>{transaction.location}</span>
                       </div>
                     )}
+
+                    {/* Line 3: Raw Merchant Text from Statement (only show if enhanced) */}
+                    {transaction.businessName && (transaction.rawMerchant || transaction.merchant) && (
+                      <p className="text-xs text-muted-foreground">
+                        {transaction.rawMerchant || transaction.merchant}
+                      </p>
+                    )}
+
+                    {/* Line 4: Merchant Description */}
                     {transaction.merchantDescription && (
                       <p className="text-xs text-muted-foreground italic">{transaction.merchantDescription}</p>
-                    )}
-                    {transaction.isRecurring && (
-                      <Badge variant="secondary" className="text-xs">
-                        <Repeat className="h-3 w-3 mr-1" />
-                        Recurring
-                      </Badge>
                     )}
                   </div>
                 </TableCell>

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parse } from "papaparse";
 import OpenAI from "openai";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/lib/supabase/server";
+import { getDb, generateId } from "@/lib/db";
+import { logger } from "@/lib/logger";
+import { createChatCompletion } from "@/lib/openai-wrapper";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -13,17 +14,23 @@ export async function POST(req: NextRequest) {
   try {
     console.log("[Upload API] Request received");
 
-    // Check authentication
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    // Check authentication with Supabase
+    const supabase = await createClient();
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !authUser) {
+      console.error("[Upload API] Auth error:", authError);
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
+    const db = await getDb();
+    const { data: user, error: userError } = await db
+      .from("User")
+      .select("*")
+      .eq("id", authUser.id)
+      .single();
 
-    if (!user) {
+    if (userError || !user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
@@ -77,17 +84,24 @@ export async function POST(req: NextRequest) {
     }
 
     // Create analysis session
-    const analysisId = "analysis-" + Date.now();
+    const analysisId = generateId();
 
     // Save analysis to database
-    const analysis = await prisma.spendingAnalysis.create({
-      data: {
+    const { data: analysis, error: analysisError } = await db
+      .from("SpendingAnalysis")
+      .insert({
         id: analysisId,
         userId: user.id,
         name: analysisName,
         status: "processing",
-      },
-    });
+      })
+      .select()
+      .single();
+
+    if (analysisError || !analysis) {
+      console.error("[Upload API] Failed to create analysis:", analysisError);
+      return NextResponse.json({ error: "Failed to create analysis" }, { status: 500 });
+    }
 
     // Create bank statement record for each file
     let bankStatementId: string | null = null;
@@ -96,8 +110,10 @@ export async function POST(req: NextRequest) {
       const firstFile = files[0] as any;
       const metadata = firstFile.extractionMetadata;
 
-      const bankStatement = await prisma.bankStatement.create({
-        data: {
+      const { data: bankStatement, error: bankStatementError } = await db
+        .from("BankStatement")
+        .insert({
+          id: generateId(),
           userId: user.id,
           analysisId: analysisId,
           filename: files.map(f => f.name).join(", "),
@@ -111,8 +127,15 @@ export async function POST(req: NextRequest) {
             transactionCount: metadata.transactionCount,
             processedAt: new Date().toISOString(),
           } : null,
-        },
-      });
+        })
+        .select()
+        .single();
+
+      if (bankStatementError || !bankStatement) {
+        console.error("[Upload API] Failed to create bank statement:", bankStatementError);
+        return NextResponse.json({ error: "Failed to create bank statement" }, { status: 500 });
+      }
+
       bankStatementId = bankStatement.id;
 
       console.log(`[Upload API] Bank: ${metadata?.bankName || 'Unknown'}, Method: ${metadata?.extractionMethod || 'N/A'}${metadata?.formatId ? ' (using learned format)' : ''}`);
@@ -125,29 +148,38 @@ export async function POST(req: NextRequest) {
       const categoryMap = new Map<string, string>(); // category name -> category ID
 
       for (const categoryName of uniqueCategories) {
-        const existing = await prisma.category.findUnique({
-          where: { name: categoryName },
-        });
+        const { data: existing, error: categoryFindError } = await db
+          .from("Category")
+          .select("*")
+          .eq("name", categoryName)
+          .single();
 
-        if (existing) {
+        if (existing && !categoryFindError) {
           categoryMap.set(categoryName, existing.id);
         } else {
-          const newCategory = await prisma.category.create({
-            data: {
+          const { data: newCategory, error: categoryCreateError } = await db
+            .from("Category")
+            .insert({
+              id: generateId(),
               name: categoryName,
               isSystem: false,
-            },
-          });
-          categoryMap.set(categoryName, newCategory.id);
-          console.log(`[Category] Created new category: ${categoryName}`);
+            })
+            .select()
+            .single();
+
+          if (!categoryCreateError && newCategory) {
+            categoryMap.set(categoryName, newCategory.id);
+            console.log(`[Category] Created new category: ${categoryName}`);
+          }
         }
       }
 
       // Prepare transaction data for bulk insert
       const transactionData = allTransactions.map((txn) => ({
+        id: generateId(),
         userId: user.id,
         bankStatementId: bankStatementId!,
-        date: new Date(txn.date),
+        date: new Date(txn.date).toISOString(),
         description: txn.description || "",
         merchant: txn.merchant || "",
         amount: txn.amount,
@@ -161,26 +193,38 @@ export async function POST(req: NextRequest) {
       }));
 
       // Bulk create transactions
-      await prisma.transaction.createMany({
-        data: transactionData,
-        skipDuplicates: true,
-      });
+      const { error: transactionError } = await db
+        .from("Transaction")
+        .insert(transactionData);
+
+      if (transactionError) {
+        console.error("[Upload API] Failed to insert transactions:", transactionError);
+        return NextResponse.json({ error: "Failed to save transactions" }, { status: 500 });
+      }
 
       console.log(`[Upload API] Saved ${allTransactions.length} transactions with ${uniqueCategories.length} categories`);
 
       // Update status
-      await prisma.spendingAnalysis.update({
-        where: { id: analysisId },
-        data: { status: "completed" },
-      });
+      const { error: analysisUpdateError } = await db
+        .from("SpendingAnalysis")
+        .update({ status: "completed" })
+        .eq("id", analysisId);
 
-      await prisma.bankStatement.update({
-        where: { id: bankStatementId },
-        data: {
+      if (analysisUpdateError) {
+        console.error("[Upload API] Failed to update analysis status:", analysisUpdateError);
+      }
+
+      const { error: statementUpdateError } = await db
+        .from("BankStatement")
+        .update({
           status: "completed",
-          processedAt: new Date(),
-        },
-      });
+          processedAt: new Date().toISOString(),
+        })
+        .eq("id", bankStatementId);
+
+      if (statementUpdateError) {
+        console.error("[Upload API] Failed to update bank statement status:", statementUpdateError);
+      }
     }
 
     const response = {
@@ -246,114 +290,6 @@ function createStatementFingerprint(pdfText: string): string {
 
   // Create a simple hash (we'll use the first 500 chars as fingerprint)
   return Buffer.from(normalized.substring(0, 500)).toString('base64');
-}
-
-// Learn statement format from AI - ask AI for extraction instructions
-async function learnStatementFormat(
-  bank: string,
-  statementType: string,
-  pdfText: string,
-  formatFingerprint: string,
-  transactions: any[]
-): Promise<string | null> {
-  try {
-    console.log(`[Format Learning] Learning new format for ${bank} (${statementType})`);
-
-    // Ask AI to provide extraction instructions for this format
-    // Find the transaction section in the PDF to show actual format
-    const transactionSectionStart = pdfText.indexOf('TRANSACTION DETAILS');
-    const rawSample = transactionSectionStart !== -1
-      ? pdfText.substring(transactionSectionStart, transactionSectionStart + 2000)
-      : pdfText.substring(0, 3000);
-
-    const sampleTransactions = transactions.slice(0, 5);
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: "You are an expert at analyzing bank statement formats and creating executable JavaScript code to extract transactions."
-        },
-        {
-          role: "user",
-          content: `Analyze this ${bank} ${statementType} statement format and provide executable JavaScript code that can extract transactions WITHOUT using AI in the future.
-
-CRITICAL: The PDF text is formatted with \\n newline characters. Transactions may span multiple lines. You MUST analyze the raw text format below to understand the line structure.
-
-Raw PDF text sample (showing actual line breaks and format):
-${rawSample}
-
-Example transactions that should be extracted from the above:
-${JSON.stringify(sampleTransactions.slice(0, 3), null, 2)}
-
-Provide:
-1. **formatDescription**: Brief human-readable description of the format (mention if single-line or multi-line)
-2. **extractionCode**: Complete JavaScript function that takes PDF text and returns transactions array
-
-The extractionCode should be a complete function named 'extractTransactions' that:
-- Takes 'pdfText' as parameter (the EXACT same format as shown in the raw sample above)
-- Returns array of {date: 'YYYY-MM-DD', merchant: string, amount: number, description: string}
-- Uses pdfText.split('\\n') to get lines, then processes them
-- Handles multi-line transactions if needed (look ahead to next lines for amounts/currency info)
-- Uses regex patterns and string manipulation (NO AI calls)
-- Includes comments explaining the logic
-
-Example format:
-\`\`\`javascript
-function extractTransactions(pdfText) {
-  const transactions = [];
-  const lines = pdfText.split('\\n');
-
-  // Your extraction logic here using regex, loops, etc.
-  // For multi-line format, use lines[i], lines[i+1], lines[i+2] etc.
-  // const datePattern = /^(August|September) \\d{1,2}$/;
-  // ...
-
-  return transactions;
-}
-\`\`\`
-
-Return as JSON: {
-  "formatDescription": "Brief description",
-  "extractionCode": "Complete JavaScript function code as string"
-}`
-        }
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.1,
-      max_tokens: 2500,
-    });
-
-    const response = completion.choices[0].message.content;
-    if (!response) {
-      throw new Error("No response from AI");
-    }
-
-    const { formatDescription, extractionCode } = JSON.parse(response);
-
-    // Save to database
-    const statementFormat = await prisma.statementFormat.create({
-      data: {
-        bankName: bank,
-        statementType: statementType,
-        formatFingerprint: formatFingerprint,
-        extractionCode: extractionCode,
-        formatDescription: formatDescription,
-        sampleFirstPage: firstPage,
-        sampleTransactions: sampleTransactions,
-      },
-    });
-
-    console.log(`[Format Learning] ✓ Saved executable extraction code for ${bank}`);
-    console.log(`[Format Learning] Description: ${formatDescription}`);
-    console.log(`[Format Learning] Code preview: ${extractionCode.substring(0, 150)}...`);
-
-    return statementFormat.id;
-  } catch (error) {
-    console.error(`[Format Learning] Error learning format for ${bank}:`, error);
-    return null;
-  }
 }
 
 // Detect bank from PDF content
@@ -437,114 +373,154 @@ async function parsePDFWithVision(buffer: Buffer, fileName: string): Promise<{
     const fingerprint = createStatementFingerprint(pdfText);
     console.log(`[PDF Parser] Statement fingerprint: ${fingerprint.substring(0, 50)}...`);
 
-    // Check if we've seen this statement format before
-    const existingFormat = await prisma.statementFormat.findUnique({
-      where: { formatFingerprint: fingerprint },
-    });
+    // Check if we have a learned format for this fingerprint
+    console.log(`[PDF Parser] Checking database for cached format...`);
+    const db = await getDb();
+    const { data: cachedFormat, error: formatError } = await db
+      .from("StatementFormat")
+      .select("id, extractionCode, formatDescription, bankName, statementType")
+      .eq("formatFingerprint", fingerprint)
+      .single();
 
-    if (existingFormat) {
-      console.log(`[PDF Parser] ✓ Found existing format instructions!`);
-      console.log(`[PDF Parser] Format: ${existingFormat.formatDescription}`);
-      console.log(`[PDF Parser] Last used: ${existingFormat.lastUsedAt}, Used ${existingFormat.useCount} times`);
+    // If no format found, cachedFormat will be null (not an error)
+    const hasCachedFormat = cachedFormat && !formatError;
 
-      // Update usage stats
-      await prisma.statementFormat.update({
-        where: { id: existingFormat.id },
-        data: {
-          lastUsedAt: new Date(),
-          useCount: { increment: 1 },
-        },
-      });
+    let transactions: any[] = [];
+    let extractionMethod = '';
+    let formatId: string | undefined;
 
-      // Extract transactions by EXECUTING the saved code (NO AI!)
-      console.log(`[PDF Parser] Extracting with learned code (NO AI)...`);
-      const transactions = await extractTransactionsWithCode(
+    if (hasCachedFormat && cachedFormat?.extractionCode) {
+      // Use cached extraction code (NO AI cost!)
+      console.log(`[PDF Parser] ✓ Using cached extraction code (NO AI cost!)`);
+      console.log(`[PDF Parser] Format: ${cachedFormat.formatDescription}`);
+
+      // Update usage stats - get current count and increment manually
+      const { data: currentFormat } = await db
+        .from("StatementFormat")
+        .select("useCount")
+        .eq("id", cachedFormat.id)
+        .single();
+
+      const { error: updateError } = await db
+        .from("StatementFormat")
+        .update({
+          lastUsedAt: new Date().toISOString(),
+          useCount: (currentFormat?.useCount || 0) + 1,
+        })
+        .eq("id", cachedFormat.id);
+
+      if (updateError) {
+        console.error("[PDF Parser] Failed to update usage stats:", updateError);
+      }
+
+      // Execute the code locally
+      transactions = await extractTransactionsWithCode(
         pdfText,
-        existingFormat.extractionCode || '',
+        cachedFormat.extractionCode,
         bank,
         statementType
       );
 
-      if (transactions.length > 0) {
-        console.log(`[PDF Parser] ✓ Extracted ${transactions.length} transactions using saved code (NO AI cost!)`);
+      extractionMethod = 'cached_code';
+      formatId = cachedFormat.id;
 
-        // Enhance with merchant cache
-        const enhanced = await enhanceTransactionsWithAI(transactions);
-
-        return {
-          transactions: enhanced,
-          bankName: bank,
-          statementType,
-          extractionMethod: 'code_execution_no_ai',
-          formatId: existingFormat.id,
-          formatFingerprint: fingerprint,
-        };
-      }
-
-      console.log(`[PDF Parser] ⚠ Saved code returned 0 transactions, trying universal pattern matcher...`);
-
-      // Try our universal pattern matcher before falling back to expensive AI
-      const patternTransactions = parsePDFWithPatterns(pdfText);
-      if (patternTransactions.length > 0) {
-        console.log(`[PDF Parser] ✓ Universal pattern matcher extracted ${patternTransactions.length} transactions`);
-
-        const enhanced = await enhanceTransactionsWithAI(patternTransactions);
-
-        return {
-          transactions: enhanced,
-          bankName: bank,
-          statementType,
-          extractionMethod: 'pattern_fallback_with_cache',
-          formatId: existingFormat.id,
-          formatFingerprint: fingerprint,
-        };
-      }
-
-      console.log(`[PDF Parser] ⚠ Pattern matcher also failed, falling back to full AI extraction...`);
+      console.log(`[PDF Parser] ✓ Extracted ${transactions.length} transactions using cached code`);
     } else {
-      console.log(`[PDF Parser] ⚠ New statement format - need to learn it!`);
+      // Learn new format with OpenAI
+      console.log(`[PDF Parser] No cached format found. Learning with OpenAI...`);
+
+      const learnResult = await learnFormatWithOpenAI(
+        pdfText,
+        bank,
+        statementType,
+        fingerprint
+      );
+
+      if (learnResult.success && learnResult.transactions.length > 0) {
+        transactions = learnResult.transactions;
+        extractionMethod = learnResult.extractionCode ? 'openai_learned_code' : 'openai_direct';
+
+        // Save the learned format for future use
+        if (learnResult.extractionCode) {
+          const newFormatId = generateId();
+          const { data: savedFormat, error: saveError } = await db
+            .from("StatementFormat")
+            .insert({
+              id: newFormatId,
+              bankName: bank,
+              statementType: statementType,
+              formatFingerprint: fingerprint,
+              extractionCode: learnResult.extractionCode,
+              formatDescription: learnResult.formatDescription || `${bank} ${statementType}`,
+              sampleFirstPage: pdfText.substring(0, 2000),
+              sampleTransactions: learnResult.transactions.slice(0, 5),
+              confidence: learnResult.confidence || 0.8,
+              learnedAt: new Date().toISOString(),
+              lastUsedAt: new Date().toISOString(),
+              useCount: 1,
+            })
+            .select()
+            .single();
+
+          if (!saveError && savedFormat) {
+            formatId = savedFormat.id;
+            console.log(`[PDF Parser] ✓ Saved extraction code for future use (format ID: ${savedFormat.id})`);
+          } else {
+            console.error("[PDF Parser] Failed to save format:", saveError);
+          }
+        }
+
+        console.log(`[PDF Parser] ✓ Extracted ${transactions.length} transactions with OpenAI`);
+      }
     }
 
-    // New format OR saved instructions failed - use full AI extraction
-    console.log(`[PDF Parser] Performing full AI extraction...`);
-    const aiResult = await extractTransactionsWithAI(pdfText);
-
-    if (aiResult.transactions.length > 0) {
-      console.log(`[PDF Parser] ✓ Extracted ${aiResult.transactions.length} transactions with AI`);
-
+    // If we got transactions, enhance and return
+    if (transactions.length > 0) {
       // Enhance with merchant cache
-      const enhanced = await enhanceTransactionsWithAI(aiResult.transactions);
-
-      // Save the extraction code if we got it and don't have an existing format
-      if (bank !== 'Unknown' && !existingFormat && aiResult.extractionCode) {
-        console.log(`[PDF Parser] Saving extraction code from AI response...`);
-        const statementFormat = await prisma.statementFormat.create({
-          data: {
-            bankName: bank,
-            statementType: statementType,
-            formatFingerprint: fingerprint,
-            extractionCode: aiResult.extractionCode,
-            formatDescription: aiResult.formatDescription || 'AI-generated extraction code',
-            sampleFirstPage: pdfText.substring(0, 3000),
-            sampleTransactions: enhanced.slice(0, 5),
-          },
-        });
-
-        return {
-          transactions: enhanced,
-          bankName: bank,
-          statementType,
-          extractionMethod: 'first_time_ai_with_learning',
-          formatId: statementFormat.id,
-          formatFingerprint: fingerprint,
-        };
-      }
+      const enhanced = await enhanceTransactionsWithAI(transactions);
 
       return {
         transactions: enhanced,
         bankName: bank,
         statementType,
-        extractionMethod: 'ai_extraction_with_cache',
+        extractionMethod,
+        formatId,
+        formatFingerprint: fingerprint,
+      };
+    }
+
+    // OpenAI failed or returned 0 transactions - fallback to pattern matcher
+    console.log(`[PDF Parser] OpenAI extraction failed, trying universal pattern matcher...`);
+    const patternTransactions = parsePDFWithPatterns(pdfText);
+
+    if (patternTransactions.length > 0) {
+      console.log(`[PDF Parser] ✓ Pattern matcher extracted ${patternTransactions.length} transactions`);
+
+      const enhanced = await enhanceTransactionsWithAI(patternTransactions);
+
+      return {
+        transactions: enhanced,
+        bankName: bank,
+        statementType,
+        extractionMethod: 'pattern_fallback',
+        formatFingerprint: fingerprint,
+      };
+    }
+
+    // Last resort: Direct AI extraction (this should rarely happen with n8n)
+    console.log(`[PDF Parser] ⚠ All methods failed, using direct OpenAI as last resort...`);
+    const aiResult = await extractTransactionsWithAI(pdfText);
+
+    if (aiResult.transactions.length > 0) {
+      console.log(`[PDF Parser] ✓ Extracted ${aiResult.transactions.length} transactions with direct AI`);
+
+      const enhanced = await enhanceTransactionsWithAI(aiResult.transactions);
+
+      return {
+        transactions: enhanced,
+        bankName: bank,
+        statementType,
+        extractionMethod: 'direct_ai_fallback',
         formatFingerprint: fingerprint,
       };
     }
@@ -763,37 +739,40 @@ function parseDateFromStatement(dateStr: string, currentYear: number): Date | nu
   return parseFlexibleDate(dateStr);
 }
 
-async function enhanceTransactionsWithAI(transactions: any[]): Promise<any[]> {
+async function enhanceTransactionsWithAI(transactions: any[], sessionId?: string): Promise<any[]> {
   console.log(`[Merchant Cache] Loading known merchants...`);
 
   // Load existing merchant metadata from database
-  const knownMerchants = await prisma.transaction.findMany({
-    where: {
-      originalData: {
-        not: null,
-      },
-    },
-    select: {
-      merchant: true,
-      originalData: true,
-      category: {
-        select: {
-          name: true,
-        },
-      },
-    },
-    distinct: ['merchant'],
-  });
+  const db = await getDb();
+  const { data: knownMerchants, error: merchantError } = await db
+    .from("Transaction")
+    .select(`
+      merchant,
+      originalData,
+      category:Category (
+        name
+      )
+    `)
+    .not("originalData", "is", null);
+
+  if (merchantError) {
+    console.error("[Merchant Cache] Error loading merchants:", merchantError);
+  }
+
+  // Filter to distinct merchants
+  const uniqueMerchants = knownMerchants?.filter((txn, index, self) =>
+    index === self.findIndex((t) => t.merchant === txn.merchant)
+  ) || [];
 
   // Build merchant lookup cache
   const merchantCache = new Map<string, any>();
-  knownMerchants.forEach((txn) => {
+  uniqueMerchants.forEach((txn) => {
     if (txn.merchant && txn.originalData) {
       const data = txn.originalData as any;
       merchantCache.set(txn.merchant.toLowerCase(), {
         merchantType: data.merchantType,
         merchantDescription: data.merchantDescription,
-        category: txn.category?.name,
+        category: Array.isArray(txn.category) ? txn.category[0]?.name : txn.category?.name,
       });
     }
   });
@@ -860,6 +839,12 @@ async function enhanceTransactionsWithAI(transactions: any[]): Promise<any[]> {
   // Only send unknown merchants to OpenAI
   if (unknownTransactions.length > 0) {
     console.log(`[AI Enhancement] Fetching metadata for ${unknownTransactions.length} unknown merchants...`);
+    logger.info(
+      "AI Enhancement",
+      `Starting merchant metadata enrichment for ${unknownTransactions.length} merchants`,
+      undefined,
+      sessionId
+    );
 
     const batchSize = 20;
     for (let i = 0; i < unknownTransactions.length; i += batchSize) {
@@ -869,16 +854,18 @@ async function enhanceTransactionsWithAI(transactions: any[]): Promise<any[]> {
       try {
         const merchantList = batch.map((t, idx) => `${idx}: ${t.merchant || t.description}`).join('\n');
 
-        const completion = await openai.chat.completions.create({
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "system",
-              content: "You are a merchant metadata expert. Provide industry type and description for each merchant."
-            },
-            {
-              role: "user",
-              content: `For each merchant, provide:
+        const completion = await createChatCompletion(
+          openai,
+          {
+            model: "gpt-4o-mini",
+            messages: [
+              {
+                role: "system",
+                content: "You are a merchant metadata expert. Provide industry type and description for each merchant."
+              },
+              {
+                role: "user",
+                content: `For each merchant, provide:
 1. merchantType (e.g., "Technology/Database", "Telecommunications", "E-commerce", "Streaming Service")
 2. merchantDescription (1 sentence about what they do)
 3. category (one of: Groceries, Utilities, Entertainment, Transport, Healthcare, Shopping, Dining, Bills, Income, Transfer, Subscriptions, Insurance, Education, Travel, Other)
@@ -887,16 +874,20 @@ Merchants:
 ${merchantList}
 
 Return JSON: {"0": {"merchantType": "...", "merchantDescription": "...", "category": "..."}, "1": {...}}`
-            }
-          ],
-          response_format: { type: "json_object" },
-          temperature: 0.1,
-          max_tokens: 2000,
-        });
+              }
+            ],
+            response_format: { type: "json_object" },
+            temperature: 0.1,
+            max_tokens: 2000,
+          },
+          "Merchant Metadata Enrichment",
+          { sessionId, timeout: 30000 }
+        );
 
         const response = completion.choices[0].message.content;
         if (response) {
           const metadata = JSON.parse(response);
+          let enrichedCount = 0;
           batch.forEach((txn, idx) => {
             const data = metadata[idx.toString()];
             const originalIdx = batchIndices[idx];
@@ -907,11 +898,24 @@ Return JSON: {"0": {"merchantType": "...", "merchantDescription": "...", "catego
               category: data?.category || txn.category,
             };
             console.log(`[AI Enhancement] ✓ ${txn.merchant} → ${data?.merchantType}`);
+            enrichedCount++;
           });
+          logger.info(
+            "AI Enhancement",
+            `Successfully enriched ${enrichedCount} merchants in batch`,
+            undefined,
+            sessionId
+          );
         }
-      } catch (error) {
-        console.error(`[AI Enhancement] Error:`, error);
-        // Fall back to original data
+      } catch (error: any) {
+        const errorMessage = error?.message || String(error);
+        logger.error(
+          "AI Enhancement",
+          `Merchant metadata enrichment failed for batch`,
+          { error: errorMessage, batchSize: batch.length },
+          sessionId
+        );
+        // Fall back to original data without metadata
         batch.forEach((txn, idx) => {
           enhanced[batchIndices[idx]] = txn;
         });
@@ -983,16 +987,18 @@ async function extractTransactionsWithAI(pdfText: string): Promise<{ transaction
   console.log(`[AI Extraction] Sending ${text.length} chars to OpenAI...`);
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: "You are a financial document analyzer expert at both extracting transactions AND creating reusable JavaScript extraction code."
-        },
-        {
-          role: "user",
-          content: `Analyze this bank statement text and:
+    const completion = await createChatCompletion(
+      openai,
+      {
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "You are a financial document analyzer expert at both extracting transactions AND creating reusable JavaScript extraction code."
+          },
+          {
+            role: "user",
+            content: `Analyze this bank statement text and:
 1. Extract ALL transactions as JSON
 2. Write JavaScript code that can extract transactions from this same format in the future
 
@@ -1016,12 +1022,15 @@ Important:
 - Extract ALL transactions (typically 50-200+)
 - Negative amounts = expenses, positive = income
 - Parse dates to YYYY-MM-DD format`
-        }
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.1,
-      max_tokens: 16000,
-    });
+          }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.1,
+        max_tokens: 16000,
+      },
+      "AI Transaction Extraction",
+      { timeout: 90000, maxRetries: 2 }
+    );
 
     const response = completion.choices[0].message.content;
     if (!response) {
@@ -1045,6 +1054,192 @@ Important:
   }
 }
 
+// Learn statement format with OpenAI and generate reusable extraction code
+async function learnFormatWithOpenAI(
+  pdfText: string,
+  bank: string,
+  statementType: string,
+  formatFingerprint: string
+): Promise<{
+  success: boolean;
+  transactions: any[];
+  extractionCode?: string;
+  formatDescription?: string;
+  confidence?: number;
+}> {
+  console.log(`[Format Learning] Learning new format for ${bank} (${statementType})`);
+
+  // Truncate if too large
+  let text = pdfText;
+  if (text.length > 30000) {
+    console.log(`[Format Learning] Text too large, truncating to 30k chars`);
+    text = text.substring(0, 30000);
+  }
+
+  // Single attempt - if prompt produces bad code, retrying won't help
+  try {
+
+    const completion = await createChatCompletion(
+      openai,
+      {
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert at analyzing bank statement formats and creating executable JavaScript code to extract transactions. You provide both immediate transaction extraction AND reusable code for future extractions of the same format."
+          },
+          {
+            role: "user",
+            content: `Analyze this ${bank} ${statementType} bank statement and complete TWO tasks:
+
+TASK 1: Extract ALL transactions immediately
+TASK 2: Generate reusable JavaScript extraction code for this exact format
+
+CRITICAL: The PDF text uses \\n newline characters. Analyze the line structure carefully to understand if transactions are single-line or multi-line format.
+
+BANK STATEMENT TEXT:
+${text}
+
+EXTRACTION CODE REQUIREMENTS:
+- Function named 'extractTransactions' that takes pdfText parameter
+- Use pdfText.split('\\n') to process line by line
+- Identify the transaction pattern (could be single-line or multi-line)
+- Handle date formats (convert to YYYY-MM-DD)
+- Extract merchant name, amount, description
+- Use regex patterns and string manipulation ONLY (NO AI calls in the code!)
+- Include detailed comments explaining the format and logic
+- Return array: [{date: 'YYYY-MM-DD', merchant: string, amount: number, description: string}]
+
+IMPORTANT:
+- Extract ALL transactions (typically 50-200+ transactions)
+- Negative amounts = expenses/debits
+- Positive amounts = income/credits
+- Be precise with amount parsing (handle commas, decimals, currency symbols)
+- Test your extraction code logic mentally against the provided text
+
+RETURN JSON EXACTLY IN THIS FORMAT:
+{
+  "transactions": [
+    {"date": "YYYY-MM-DD", "merchant": "...", "amount": -50.00, "description": "..."},
+    ...all transactions
+  ],
+  "extractionCode": "function extractTransactions(pdfText) {\\n  // Complete executable JavaScript function\\n  const transactions = [];\\n  const lines = pdfText.split('\\\\n');\\n  // ... your extraction logic\\n  return transactions;\\n}",
+  "formatDescription": "Brief description of the statement format (e.g., 'American Express multi-line format with currency lines')",
+  "confidence": 0.95
+}
+
+The confidence should be 0.0-1.0 based on how certain you are the extraction code will work correctly.`
+          }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.1,
+        max_tokens: 16000,
+      },
+      "Format Learning",
+      { timeout: 120000, maxRetries: 1 }
+    );
+
+      const response = completion.choices[0].message.content;
+      if (!response) {
+        throw new Error("No response from OpenAI");
+      }
+
+      const parsed = JSON.parse(response);
+      const transactions = parsed.transactions || [];
+      const extractionCode = parsed.extractionCode;
+      const formatDescription = parsed.formatDescription || `${bank} ${statementType}`;
+      const confidence = parsed.confidence || 0.8;
+
+      console.log(`[Format Learning] ✓ Extracted ${transactions.length} transactions`);
+      console.log(`[Format Learning] Confidence: ${confidence}`);
+
+      if (!extractionCode) {
+        console.warn(`[Format Learning] No extraction code provided`);
+        return {
+          success: true,
+          transactions,
+        };
+      }
+
+      console.log(`[Format Learning] ✓ Generated extraction code (${extractionCode.length} chars)`);
+
+      // Validate the extraction code by testing it
+      if (transactions.length > 0) {
+        try {
+          console.log(`[Format Learning] Validating extraction code...`);
+          const testTransactions = await extractTransactionsWithCode(
+            pdfText,
+            extractionCode,
+            bank,
+            statementType
+          );
+
+          // Check if validation produced similar results (allow 20% variance)
+          const validationSuccess = testTransactions.length >= transactions.length * 0.8;
+          console.log(`[Format Learning] Validation: ${testTransactions.length} vs ${transactions.length} transactions`);
+
+          if (!validationSuccess) {
+            console.warn(`[Format Learning] Validation failed - code extracted ${testTransactions.length} but AI extracted ${transactions.length}`);
+            logger.warn("Format Learning", `Code validation failed - using AI transactions instead`);
+
+            // Return AI-extracted transactions without code (don't waste tokens retrying)
+            return {
+              success: true,
+              transactions,
+            };
+          }
+
+          console.log(`[Format Learning] ✓ Validation passed!`);
+        } catch (validationError) {
+          console.error(`[Format Learning] Validation error:`, validationError);
+
+          // If not last attempt, retry
+          if (attempt < maxRetries) {
+            console.log(`[Format Learning] Retrying due to validation error...`);
+            continue;
+          }
+
+          // On last attempt, return AI-extracted transactions without code
+          return {
+            success: true,
+            transactions,
+          };
+        }
+      }
+
+      // Success! Return transactions and validated code
+      return {
+        success: true,
+        transactions,
+        extractionCode,
+        formatDescription,
+        confidence,
+      };
+
+    } catch (error) {
+      console.error(`[Format Learning] Attempt ${attempt} error:`, error);
+
+      // If last attempt, return failure
+      if (attempt === maxRetries) {
+        console.error("[Format Learning] All retry attempts failed");
+        return {
+          success: false,
+          transactions: [],
+        };
+      }
+
+      // Otherwise, retry after a short delay
+      await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+    }
+  }
+
+  // Should never reach here, but just in case
+  return {
+    success: false,
+    transactions: [],
+  };
+}
+
 async function parseImageWithVision(buffer: Buffer, fileName: string): Promise<any[]> {
   console.log(`[Vision API] Processing image: ${fileName}`);
 
@@ -1052,43 +1247,48 @@ async function parseImageWithVision(buffer: Buffer, fileName: string): Promise<a
   const mimeType = fileName.endsWith('.png') ? 'image/png' : 'image/jpeg';
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: "You are a financial document analyzer. Extract all transactions from bank statement screenshots."
-        },
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: `Extract ALL transactions from this bank statement screenshot. For each transaction, provide:
-              1. date (in YYYY-MM-DD format)
-              2. description
-              3. amount (negative for debits, positive for credits)
-              4. merchant name
+    const completion = await createChatCompletion(
+      openai,
+      {
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "You are a financial document analyzer. Extract all transactions from bank statement screenshots."
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: `Extract ALL transactions from this bank statement screenshot. For each transaction, provide:
+                1. date (in YYYY-MM-DD format)
+                2. description
+                3. amount (negative for debits, positive for credits)
+                4. merchant name
 
-              Important:
-              - Convert DD/MM/YYYY dates to YYYY-MM-DD
-              - Accept dates in 2024 and 2025
-              - Include ALL visible transactions
-              - If the image shows a mobile app or website, extract all transaction data
+                Important:
+                - Convert DD/MM/YYYY dates to YYYY-MM-DD
+                - Accept dates in 2024 and 2025
+                - Include ALL visible transactions
+                - If the image shows a mobile app or website, extract all transaction data
 
-              Return as JSON: {"transactions": [{"date": "YYYY-MM-DD", "description": "...", "amount": -00.00, "merchant": "..."}]}`
-            },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:${mimeType};base64,${base64}`
+                Return as JSON: {"transactions": [{"date": "YYYY-MM-DD", "description": "...", "amount": -00.00, "merchant": "..."}]}`
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:${mimeType};base64,${base64}`
+                }
               }
-            }
-          ]
-        }
-      ],
-      max_tokens: 4000,
-    });
+            ]
+          }
+        ],
+        max_tokens: 4000,
+      },
+      "PDF Vision Parsing",
+      { timeout: 90000, maxRetries: 2 }
+    );
 
     const response = completion.choices[0].message.content;
     if (!response) {
@@ -1119,25 +1319,30 @@ async function parseOFXQIF(buffer: Buffer): Promise<any[]> {
 
   try {
     // Send to OpenAI for parsing
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4-turbo-preview",
-      messages: [
-        {
-          role: "system",
-          content: "You are a financial data parser for OFX and QIF formats."
-        },
-        {
-          role: "user",
-          content: `Parse this OFX/QIF file and extract all transactions. Return as JSON:
-          {"transactions": [{"date": "YYYY-MM-DD", "description": "...", "amount": -00.00, "merchant": "..."}]}
+    const completion = await createChatCompletion(
+      openai,
+      {
+        model: "gpt-4-turbo-preview",
+        messages: [
+          {
+            role: "system",
+            content: "You are a financial data parser for OFX and QIF formats."
+          },
+          {
+            role: "user",
+            content: `Parse this OFX/QIF file and extract all transactions. Return as JSON:
+            {"transactions": [{"date": "YYYY-MM-DD", "description": "...", "amount": -00.00, "merchant": "..."}]}
 
-          File content:
-          ${text}`
-        }
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.1,
-    });
+            File content:
+            ${text}`
+          }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.1,
+      },
+      "OFX/QIF Parsing",
+      { timeout: 60000, maxRetries: 2 }
+    );
 
     const response = completion.choices[0].message.content;
     if (!response) {
@@ -1197,22 +1402,27 @@ ${JSON.stringify(batch)}
 `;
 
     try {
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: "You are a financial CSV parser. Extract ALL transactions accurately."
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.1,
-        max_tokens: 2000, // Reduced to ensure complete responses
-      });
+      const completion = await createChatCompletion(
+        openai,
+        {
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: "You are a financial CSV parser. Extract ALL transactions accurately."
+            },
+            {
+              role: "user",
+              content: prompt
+            }
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.1,
+          max_tokens: 2000, // Reduced to ensure complete responses
+        },
+        `CSV Parsing (Batch ${i/batchSize + 1})`,
+        { timeout: 45000, maxRetries: 2 }
+      );
 
       const response = completion.choices[0].message.content;
       if (response) {

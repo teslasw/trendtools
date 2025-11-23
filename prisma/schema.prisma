@@ -221,6 +221,8 @@ model StatementFormat {
   sampleTransactions   Json?    // 3-5 example transactions from first learning
 
   // Metadata
+  confidence           Float?   // Confidence score from AI (0.0 - 1.0)
+  patternNotes         String?  @db.Text // Notes about patterns identified
   learnedAt            DateTime @default(now())
   lastUsedAt           DateTime @default(now())
   useCount             Int      @default(1)

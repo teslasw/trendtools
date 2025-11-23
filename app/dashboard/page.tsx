@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useUser } from "@/lib/hooks/use-user";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -21,8 +21,8 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function DashboardPage() {
-  const { data: session } = useSession();
-  const firstName = (session?.user as any)?.name?.split(" ")[0] || "there";
+  const { user } = useUser();
+  const firstName = user?.name?.split(" ")[0] || "there";
 
   const quickActions = [
     {
